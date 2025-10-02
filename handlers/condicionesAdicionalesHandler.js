@@ -51,6 +51,7 @@ exports.handler = async (event) => {
       try {
         body = JSON.parse(event.body);
       } catch (parseError) {
+        console.log("condiciones adicionales parseError: ", parseError);
         return {
           statusCode: 400,
           headers: headers,
@@ -94,10 +95,13 @@ exports.handler = async (event) => {
       await client.query('BEGIN');
       
       // Verificar si ya existe un registro con el mismo idflujo
-      const checkQuery = 'SELECT id_datos_condiciones FROM datos_condiciones WHERE id_promociones_ttp = $1';
+      const checkQuery = 'SELECT id_datos_condiciones, adicional FROM datos_condiciones WHERE id_promociones_ttp = $1';
       const checkResult = await client.query(checkQuery, [body.idflujo]);
       
       const exists = checkResult.rows.length > 0;
+
+      console.log("result checkResult: ", checkResult);
+
       
       if (exists) {
         // UPDATE - Si existe, actualizar solo el campo adicional
@@ -126,55 +130,18 @@ exports.handler = async (event) => {
         
         console.log('UPDATE adicional values:', values);
         const result = await client.query(updateQuery, values);
+
+
+        console.log("--result: ", result)
         
       } else {
-        // INSERT - Si no existe, crear nuevo registro con solo los campos necesarios
-        console.log(`Creando nuevo registro con campo adicional para idflujo: ${body.idflujo}`);
-        
-        const insertQuery = `
-          INSERT INTO datos_condiciones 
-          (
-            id_promociones_ttp, adicional, sub, nombre_editor, fecha_mod, 
-            responsable_modificacion, ultima_modificacion,
-            urgente, fin_promocion_y_producto, campania_r_l_bot,
-            descuento_de_por_vida, bestfit, prorroteo, no_visible_en_front, 
-            determina_promocion, es_comisionable, cupon, meses_pago_adelantado, 
-            porcentaje_pago_adelantado, automatica, condiciones_promociones, 
-            perfil_promociones, comentarios
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP,
-                  $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
-          RETURNING id_datos_condiciones
-        `;
-        
-        const values = [
-          body.idflujo,                                    // $1
-          JSON.stringify(body.adicionales),                // $2
-          body.sub,                                        // $3
-          body.nombreEditor,                               // $4
-          fechaModConvertida,                              // $5
-          body.nombreEditor,                               // $6 - responsable_modificacion
-          false,                                           // $7 - urgente
-          false,                                           // $8 - fin_promocion_y_producto
-          false,                                           // $9 - campania_r_l_bot
-          false,                                           // $10 - descuento_de_por_vida
-          false,                                           // $11 - bestfit
-          false,                                           // $12 - prorroteo
-          false,                                           // $13 - no_visible_en_front
-          false,                                           // $14 - determina_promocion
-          false,                                           // $15 - es_comisionable
-          false,                                           // $16 - cupon
-          0,                                               // $17 - meses_pago_adelantado
-          0.00,                                            // $18 - porcentaje_pago_adelantado
-          '',                                              // $19 - automatica
-          '',                                              // $20 - condiciones_promociones
-          '',                                              // $21 - perfil_promociones
-          ''                                               // $22 - comentarios
-        ];
-        
-        console.log('INSERT adicional values:', values);
-        console.log('Number of values for INSERT:', values.length);
-        //const result = await client.query(insertQuery, values);
+          await client.query('ROLLBACK');
+          return {
+            statusCode: 400, headers, body: JSON.stringify({
+              error: 'El idFlujo no existe',
+              details: `No se pueden registar los datos para idFlujo (${body.idflujo})`
+            })
+          };
       }
       
       await client.query('COMMIT');
@@ -183,10 +150,8 @@ exports.handler = async (event) => {
         statusCode: 200,
         headers: headers,
         body: JSON.stringify({
-          message: exists ? 'Campo adicional actualizado exitosamente' : 'Registro creado con campo adicional exitosamente',
-          idflujo: body.idflujo,
-          action: exists ? 'updated' : 'created',
-          adicionales: body.adicionales
+          message: 'Campo adicional registrado exitosamente',
+          idflujo: body.idflujo
         })
       };
       

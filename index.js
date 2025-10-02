@@ -75,6 +75,11 @@ if (path.includes('/promociones/dashboard') && httpMethod === 'GET') {
 else if (path.includes('/grafos-simulador') && httpMethod === 'POST') {
   return await grafosSimuladorHandler.handler(event);
 }
+else if (path.includes('/cupones') && httpMethod === 'POST') {
+  return await cuponesHandler.handler(event);
+}
+
+
 else if (path.includes('/detalle-planes') && httpMethod === 'POST') {
   return await detallePlanesHandler.handler(event);
 }
@@ -87,9 +92,7 @@ else if (path.includes('/detalle-nodos') && httpMethod === 'POST') {
 else if (path.includes('/detalle-condiciones') && httpMethod === 'POST') {
   return await detalleCondicionesHandler.handler(event);
 }
-else if (path.includes('/cupones') && httpMethod === 'POST') {
-  return await cuponesHandler.handler(event);
-}
+
 else if (path.includes('/detalle-cupones') && httpMethod === 'POST') {
   return await detalleCupones.handler(event);
 }
