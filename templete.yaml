@@ -16,7 +16,7 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       Code:
         S3Bucket: "lambdasttp"
-        S3Key: "js85.zip"
+        S3Key: "js102_fix_condiAdicional.zip"
       Timeout: 30
       Environment:
         Variables:
@@ -585,7 +585,7 @@ Resources:
             method.response.header.Access-Control-Allow-Origin: true
             method.response.header.Access-Control-Allow-Methods: true
 
-              # ==================== SIMULADOR ====================
+  # ==================== SIMULADOR ====================
   SimuladorResource:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -674,7 +674,7 @@ Resources:
             method.response.header.Access-Control-Allow-Methods: true
 
 
-              # ==================== DETALLE PLANES ====================
+  # ==================== DETALLE PLANES ====================
   DetallePlanesResource:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -718,8 +718,96 @@ Resources:
             method.response.header.Access-Control-Allow-Origin: true
             method.response.header.Access-Control-Allow-Methods: true
 
+  # ==================== DETALLE NODOS ====================
+  DetalleNodosResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ParentId: !GetAtt ApiGateway.RootResourceId
+      PathPart: 'detalle-nodos'
 
-              # ==================== DETALLE SEGMENTACION ====================
+  DetalleNodosMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref DetalleNodosResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostgresLambda.Arn}/invocations'
+
+  DetalleNodosOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref DetalleNodosResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  # ==================== DETALLE CONDICIONES ====================
+  DetalleCondicionesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ParentId: !GetAtt ApiGateway.RootResourceId
+      PathPart: 'detalle-condiciones'
+
+  DetalleCondicionesMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref DetalleCondicionesResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostgresLambda.Arn}/invocations'
+
+  DetalleCondicionesOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref DetalleCondicionesResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+
+  # ==================== DETALLE SEGMENTACION ====================
   DetalleSegmentacionResource:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -764,19 +852,19 @@ Resources:
             method.response.header.Access-Control-Allow-Methods: true
 
 
-    # ==================== DETALLE NODOS ====================
-  DetalleNodosResource:
+  # ==================== DETALLES CUPONES ====================
+  DetallesCuponesResource:
     Type: AWS::ApiGateway::Resource
     Properties:
       RestApiId: !Ref ApiGateway
       ParentId: !GetAtt ApiGateway.RootResourceId
-      PathPart: 'detalle-nodos'
+      PathPart: 'detalle-cupones'
 
-  DetalleNodosMethod:
+  DetallesCuponesMethod:
     Type: AWS::ApiGateway::Method
     Properties:
       RestApiId: !Ref ApiGateway
-      ResourceId: !Ref DetalleNodosResource
+      ResourceId: !Ref DetallesCuponesResource
       HttpMethod: POST
       AuthorizationType: NONE
       Integration:
@@ -784,11 +872,11 @@ Resources:
         IntegrationHttpMethod: POST
         Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostgresLambda.Arn}/invocations'
 
-  DetalleNodosOptionsMethod:
+  DetallesCuponesOptionsMethod:
     Type: AWS::ApiGateway::Method
     Properties:
       RestApiId: !Ref ApiGateway
-      ResourceId: !Ref DetalleNodosResource
+      ResourceId: !Ref DetallesCuponesResource
       HttpMethod: OPTIONS
       AuthorizationType: NONE
       Integration:
@@ -808,19 +896,19 @@ Resources:
             method.response.header.Access-Control-Allow-Origin: true
             method.response.header.Access-Control-Allow-Methods: true
 
-              # ==================== DETALLE CONDICIONES ====================
-  DetalleCondicionesResource:
+  # ==================== DETALLES INCONVIVERNCIAS ====================
+  DetallesInconvivenciasResource:
     Type: AWS::ApiGateway::Resource
     Properties:
       RestApiId: !Ref ApiGateway
       ParentId: !GetAtt ApiGateway.RootResourceId
-      PathPart: 'detalle-condiciones'
+      PathPart: 'detalle-inconvivencias'
 
-  DetalleCondicionesMethod:
+  DetallesInconvivenciasMethod:
     Type: AWS::ApiGateway::Method
     Properties:
       RestApiId: !Ref ApiGateway
-      ResourceId: !Ref DetalleCondicionesResource
+      ResourceId: !Ref DetallesInconvivenciasResource
       HttpMethod: POST
       AuthorizationType: NONE
       Integration:
@@ -828,11 +916,143 @@ Resources:
         IntegrationHttpMethod: POST
         Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostgresLambda.Arn}/invocations'
 
-  DetalleCondicionesOptionsMethod:
+  DetallesInconvivenciasOptionsMethod:
     Type: AWS::ApiGateway::Method
     Properties:
       RestApiId: !Ref ApiGateway
-      ResourceId: !Ref DetalleCondicionesResource
+      ResourceId: !Ref DetallesInconvivenciasResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  # ==================== ADICIONALES CONDICIONES ====================
+  AdicionalesCondicionesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ParentId: !GetAtt ApiGateway.RootResourceId
+      PathPart: 'adicionales-condiciones'
+
+  AdicionalesCondicionesMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref AdicionalesCondicionesResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostgresLambda.Arn}/invocations'
+
+  AdicionalesCondicionesOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref AdicionalesCondicionesResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  # ==================== DETALLE PROMOCIONES ====================
+  DetallePromocionesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ParentId: !GetAtt ApiGateway.RootResourceId
+      PathPart: 'detalle-promociones'
+
+  DetallePromocionesMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref DetallePromocionesResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostgresLambda.Arn}/invocations'
+
+  DetallePromocionesOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref DetallePromocionesResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  # ==================== DETALLE ADICIONAL PROMOCIONES ====================
+  DetalleAdicionalPromocionesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ParentId: !GetAtt ApiGateway.RootResourceId
+      PathPart: 'detalle-adicional-condiciones'
+
+  DetalleAdicionalPromocionesMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref DetalleAdicionalPromocionesResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostgresLambda.Arn}/invocations'
+
+  DetalleAdicionalPromocionesOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref DetalleAdicionalPromocionesResource
       HttpMethod: OPTIONS
       AuthorizationType: NONE
       Integration:
@@ -884,6 +1104,8 @@ Resources:
       - DispersionAdicionalMethod
       - DispersionMegasMethod
       - DispersionCombinadaMethod
+      - DetallesCuponesMethod
+      - DetallesInconvivenciasMethod
       - PromocionesOptionsMethod
       - DashboardOptionsMethod
       - CondicionesOptionsMethod
@@ -902,13 +1124,18 @@ Resources:
       - DispersionAdicionalOptionsMethod
       - DispersionMegasOptionsMethod
       - DispersionCombinadaOptionsMethod
+      - DetallesCuponesOptionsMethod
+      - DetallesInconvivenciasOptionsMethod
+      - AdicionalesCondicionesOptionsMethod
+      - DetallePromocionesOptionsMethod
+      - DetalleAdicionalPromocionesOptionsMethod
     Properties:
       RestApiId: !Ref ApiGateway
       StageName: !Ref EnvironmentName
 
 Outputs:
   PromocionesApiUrl:
-    Description: 'URL del endpoint de promociones'
+    Description: 'URL del endpoint de promociones con generacion de idflujo consecutivo'
     Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/promociones'
   
   DashboardApiUrl:
@@ -978,6 +1205,26 @@ Outputs:
   DetalleCondicionesApiUrl:
     Description: 'URL del endpoint de detalle de condiciones'
     Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/detalle-condiciones'
+
+  DetallesCuponesApiUrl:
+    Description: 'URL del endpoint de detalle Cupones'
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/detalle-cupones'
+
+  DetallesInconvivenciasApiUrl:
+    Description: 'URL del endpoint de detalle Inconvivencias'
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/detalle-inconvivencias'  
+
+  AdicionalesCondicionesApiUrl:
+    Description: 'URL del endpoint de Adicionales Condiciones'
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/adicionales-condiciones'  
+
+  DetallePromocionesApiUrl:
+    Description: 'URL del endpoint detalle promociones'
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/detalle-promociones'
+
+  DetalleAdicionalCondicionesApiUrl:
+    Description: 'URL del endpoint detalle del campo adicional de condiciones'
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/detalle-adicional-condiciones'
 
   ApiGatewayId:
     Description: 'ID del API Gateway'

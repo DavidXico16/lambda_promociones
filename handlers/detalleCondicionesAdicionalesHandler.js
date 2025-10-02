@@ -68,8 +68,9 @@ exports.handler = async (event) => {
         
         console.log(`result rows[0]: ${result.rows[0]}`);
         console.log(`result length: ${result.rows.length}`);
+        console.log(`result length: ${result.rows.length}`);
 
-        if (result.rows[0].adicional === null) {
+        if ( result.rows.length == 0 || result.rows[0].adicional === null) {
             return {
                 statusCode: 404,
                 headers: {
@@ -77,7 +78,7 @@ exports.handler = async (event) => {
                     'Access-Control-Allow-Origin': '*'
                 },
                 body: JSON.stringify({ 
-                    error: 'No se encontraron registros con el idFlujo proporcionado en la tabla de datos_condiciones en el campo adicional',
+                    error: 'No se encontraron registros con el idFlujo proporcionado',
                     idFlujo: idFlujo
                 })
             };

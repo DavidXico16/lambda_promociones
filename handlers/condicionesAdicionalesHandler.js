@@ -11,7 +11,6 @@ const dbConfig = {
   }
 };
 
-// Función para convertir fecha de DD/MM/YYYY a YYYY-MM-DD
 function convertirFecha(fecha) {
   if (!fecha) return null;
   
