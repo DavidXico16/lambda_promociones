@@ -23,6 +23,10 @@ const detalleIncovivencias = require('./handlers/detalleInconvicencias');
 const condicionesAdicionalesHandler = require('./handlers/condicionesAdicionalesHandler');
 const detallePromocionesHandler = require('./handlers/detallePromocionesHandler');
 const detalleAdicinalCondicionesHandler = require('./handlers/detalleCondicionesAdicionalesHandler');
+const datosQuitaHadler = require('./handlers/datosQuitaHandler');
+const detallesQuitaHandler = require('./handlers/detalleQuitaHandler');
+const quitaCondicionesHandler = require('./handlers/quitaCondicionesHandler');
+const detalleQuitaCondiciones = require('./handlers/detalleQuitaCondicionesHandler');
 
 
 exports.handler = async (event) => {
@@ -108,6 +112,22 @@ else if (path.includes('/detalle-promociones') && httpMethod === 'POST') {
 else if (path.includes('/detalle-adicional-condiciones') && httpMethod === 'POST') {
   return await detalleAdicinalCondicionesHandler.handler(event);
 }
+
+// ------ QUITAS ----  //
+else if (path.includes('/datosQuita') && httpMethod === 'POST') {
+  return await datosQuitaHadler.handler(event);
+}
+else if (path.includes('/detalleQuita') && httpMethod === 'POST') {
+  return await detallesQuitaHandler.handler(event);
+}
+else if (path.includes('/quitaCondiciones') && httpMethod === 'POST') {
+  return await quitaCondicionesHandler.handler(event);
+}
+else if (path.includes('/detalleCondicionesQuita') && httpMethod === 'POST') {
+  return await detalleQuitaCondiciones.handler(event);
+}
+
+
   else {
     return {
       statusCode: 404,

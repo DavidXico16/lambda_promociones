@@ -63,8 +63,6 @@ exports.handler = async (event) => {
     }
 
     // Validamos el campo de idflujo
-
-
     const requiredIdFlujo = ['idflujo'];
     const missingIdFujo = requiredIdFlujo.filter(field => !body[field]);
     
@@ -172,7 +170,8 @@ exports.handler = async (event) => {
                         canales_front = $13,
                         fecha_creacion = $14,
                         responsable_modificacion = $15,
-                        ultima_modificacion = CURRENT_TIMESTAMP
+                        ultima_modificacion = CURRENT_TIMESTAMP,
+                        descripcion = $17
                     WHERE id_promociones_ttp = $16
                   `;
                   
@@ -192,7 +191,8 @@ exports.handler = async (event) => {
                     JSON.stringify(datosPromocion.canales_front || []),
                     fechaModConvertida,
                     datosPromocion.nombreEditor,
-                    body.idflujo
+                    body.idflujo,
+                    datosPromocion.descripcion
                   ];
                   
                   await client.query(updateDatosQuery, datosValues);
@@ -285,7 +285,7 @@ exports.handler = async (event) => {
           (id_promociones_ttp, nombre_promosion, nombre_homologado, area_responsable,
           tipo_promocion, inicio_vigencia, fin_vigencia, area_solicitante, categoria,
           unidad_negocio, tipo_venta, referencia, cancelacion_enrutamiento, canales_front,
-          fecha_creacion, responsable_modificacion, ultima_modificacion)
+          fecha_creacion, responsable_modificacion, ultima_modificacion, descripcion)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP)
         `;
         
@@ -305,7 +305,8 @@ exports.handler = async (event) => {
           datosPromocion.cancelacionEnrutamiento,
           JSON.stringify(datosPromocion.canales_front || []),
           fechaModConvertida,
-          datosPromocion.nombreEditor
+          datosPromocion.nombreEditor,
+          datosPromocion.descripcion
         ];
         
         await client.query(insertDatosQuery, datosValues);
