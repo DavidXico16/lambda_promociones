@@ -25,6 +25,7 @@ const detalleAdicinalCondicionesHandler = require('./handlers/detalleCondiciones
 const detalleDispersionDescuento = require('./handlers/detalleDispersionDescuentoHandler');
 const detalleDispersionAdicional = require('./handlers/detalleDispersionAdicionalHandler');
 const detalleDispersionMegas = require('./handlers/detalleDispersionMegasHandler');
+const detalleDispersionCombinada = require('./handlers/detalleDispersionCombinadaHandler');
 
 exports.handler = async (event) => {
   console.log('Event received:', JSON.stringify(event, null, 2));
@@ -115,6 +116,10 @@ else if (path.includes('/detalleDispersionAdicional') && httpMethod === 'POST') 
 else if (path.includes('/detalleDispersionMegas') && httpMethod === 'POST') {
   return await detalleDispersionMegas.handler(event);
 }
+else if (path.includes('/detalleDispersionCombinada') && httpMethod === 'POST') {
+  return await detalleDispersionCombinada.handler(event);
+}
+
   else {
     return {
       statusCode: 404,
