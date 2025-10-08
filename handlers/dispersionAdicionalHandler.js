@@ -39,6 +39,7 @@ exports.handler = async (event) => {
     let body;
     if (event.body) {
       try { body = JSON.parse(event.body); } catch (parseError) {
+        console.log("Error: ", parseError)
         return { statusCode: 400, headers, body: JSON.stringify({ error: 'Cuerpo de solicitud JSON inválido' }) };
       }
     } else { body = event; }

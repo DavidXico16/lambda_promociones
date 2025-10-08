@@ -63,6 +63,8 @@ exports.handler = async (event) => {
     }
 
     // Validamos el campo de idflujo
+
+
     const requiredIdFlujo = ['idflujo'];
     const missingIdFujo = requiredIdFlujo.filter(field => !body[field]);
     
@@ -286,7 +288,7 @@ exports.handler = async (event) => {
           tipo_promocion, inicio_vigencia, fin_vigencia, area_solicitante, categoria,
           unidad_negocio, tipo_venta, referencia, cancelacion_enrutamiento, canales_front,
           fecha_creacion, responsable_modificacion, ultima_modificacion, descripcion)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP, $17)
         `;
         
         const datosValues = [

@@ -16,7 +16,7 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       Code:
         S3Bucket: "lambdasttp"
-        S3Key: "js102_fix_condiAdicional.zip"
+        S3Key: "promociones/js002.zip"
       Timeout: 30
       Environment:
         Variables:
@@ -56,7 +56,6 @@ Resources:
       FunctionName: !GetAtt PostgresLambda.Arn
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*'
-
   # ==================== PROMOCIONES ====================
   PromocionesResource:
     Type: AWS::ApiGateway::Resource
@@ -100,7 +99,6 @@ Resources:
             method.response.header.Access-Control-Allow-Headers: true
             method.response.header.Access-Control-Allow-Origin: true
             method.response.header.Access-Control-Allow-Methods: true
-
   # ==================== DASHBOARD ====================
   DashboardResource:
     Type: AWS::ApiGateway::Resource
@@ -1072,6 +1070,50 @@ Resources:
             method.response.header.Access-Control-Allow-Origin: true
             method.response.header.Access-Control-Allow-Methods: true
 
+  # ==================== DETALLE DISPERSION DESCUENTO ====================
+  DetalleDescuentoResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ParentId: !GetAtt ApiGateway.RootResourceId
+      PathPart: 'detalleDispersionDescuento'
+
+  DetalleDescuentoMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref DetalleDescuentoResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostgresLambda.Arn}/invocations'
+
+  DetalleDescuentoOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref DetalleDescuentoResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+
   # Configuración CORS global
   GatewayResponse:
     Type: AWS::ApiGateway::GatewayResponse
@@ -1129,6 +1171,8 @@ Resources:
       - AdicionalesCondicionesOptionsMethod
       - DetallePromocionesOptionsMethod
       - DetalleAdicionalPromocionesOptionsMethod
+      - DetalleDescuentoMethod
+      - DetalleDescuentoOptionsMethod
     Properties:
       RestApiId: !Ref ApiGateway
       StageName: !Ref EnvironmentName
@@ -1225,6 +1269,10 @@ Outputs:
   DetalleAdicionalCondicionesApiUrl:
     Description: 'URL del endpoint detalle del campo adicional de condiciones'
     Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/detalle-adicional-condiciones'
+
+  DetalleDescuentoApiUrl:
+    Description: 'URL del endpoint detalle de descuento'
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/detalleDispersionDescuento'
 
   ApiGatewayId:
     Description: 'ID del API Gateway'
