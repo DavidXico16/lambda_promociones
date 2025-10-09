@@ -135,7 +135,7 @@ exports.handler = async (event) => {
         ];
         
         console.log('UPDATE values:', values);
-        const result = await client.query(updateQuery, values);
+        await client.query(updateQuery, values);
         
       } else {
         // INSERT - Si no existe, crear nuevo registro
@@ -158,7 +158,7 @@ exports.handler = async (event) => {
         ];
         
         console.log('INSERT values:', values);
-        const result = await client.query(insertQuery, values);
+        await client.query(insertQuery, values);
       }
       
       await client.query('COMMIT');
