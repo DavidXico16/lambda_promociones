@@ -93,8 +93,23 @@ exports.handler = async (event) => {
     try {
       await client.query('BEGIN');
       
+      const checkFlujo = await client.query(
+        'SELECT id_promociones_ttp FROM promociones_ttp WHERE id_promociones_ttp = $1',
+        [body.idFlujo]
+      );
+
+      if (checkFlujo.rows.length === 0) {
+        return {
+          statusCode: 404,
+          headers: defaultHeaders(),
+          body: JSON.stringify({
+            error: 'El idFlujo no existe en la tabla promociones_ttp'
+          })
+        };
+      }
+
       // Verificar si ya existe un registro con el mismo idflujo
-      const checkQuery = 'SELECT id_datos_condiciones, adicional FROM datos_condiciones WHERE id_promociones_ttp = $1';
+      const checkQuery = 'SELECT promociones_tt, adicional FROM datos_condiciones WHERE id_promociones_ttp = $1';
       const checkResult = await client.query(checkQuery, [body.idflujo]);
       
       const exists = checkResult.rows.length > 0;
