@@ -90,64 +90,91 @@ exports.handler = async (event) => {
       const exists = checkResult.rows.length > 0;
       
       if (exists) {
-        const updateQuery = `
-          UPDATE datos_dispercion_megas 
-          SET vigencia_de_aplicacion = $1, pronto_pago = $2, precio_lista = $3, aplicacion_montos_frontera = $4,
-              aplicacion_montos_nacionales = $5, megas = $6, porcentaje_de_descuento = $7, monto_de_descuento = $8,
-              mes_inicio = $9, vigencia_en_meses = $10, megas_de_subida = $11, megas_de_bajada = $12,
-              responsable_modificacion = $13, ultima_modificacion = $14
-          WHERE id_promociones_ttp = $15
-          RETURNING id_datos_dispercion_megas
+       let updateFields = `
+          vigencia_de_aplicacion = $1, pronto_pago = $2, precio_lista = $3, aplicacion_montos_frontera = $4,
+          aplicacion_montos_nacionales = $5, megas = $6, porcentaje_de_descuento = $7, monto_de_descuento = $8,
+          mes_inicio = $9, vigencia_en_meses = $10, megas_de_subida = $11, megas_de_bajada = $12,
+          responsable_modificacion = $13, ultima_modificacion = $14
         `;
-        
-        const values = [
+
+        let values = [
           dispersionData.vigencia_de_aplicacion,
-          parseInt(dispersionData.pronto_pago),
-          parseInt(dispersionData.precio_lista),
-          parseInt(dispersionData.aplicacion_montos_frontera),
-          parseInt(dispersionData.aplicacion_montos_nacionales),
+          Number.parseInt(dispersionData.pronto_pago),
+          Number.parseInt(dispersionData.precio_lista),
+          Number.parseInt(dispersionData.aplicacion_montos_frontera),
+          Number.parseInt(dispersionData.aplicacion_montos_nacionales),
           JSON.stringify(dispersionData.megas),
-          parseFloat(dispersionData.porcentaje_de_descuento),
-          parseFloat(dispersionData.monto_de_descuento),
+          Number.parseFloat(dispersionData.porcentaje_de_descuento),
+          Number.parseFloat(dispersionData.monto_de_descuento),
           mesInicioConvertido,
-          parseInt(dispersionData.vigencia_en_meses),
-          parseInt(dispersionData.megas_de_subida),
-          parseInt(dispersionData.megas_de_bajada),
-          dispersionData.nombreEditor,
-          fechaModConvertida,
-          dispersionData.idFlujo
-        ];
-        
-        const result = await client.query(updateQuery, values);
-      } else {
-        const insertQuery = `
-          INSERT INTO datos_dispercion_megas 
-          (id_promociones_ttp, vigencia_de_aplicacion, pronto_pago, precio_lista, aplicacion_montos_frontera,
-           aplicacion_montos_nacionales, megas, porcentaje_de_descuento, monto_de_descuento, mes_inicio,
-           vigencia_en_meses, megas_de_subida, megas_de_bajada, responsable_modificacion, ultima_modificacion)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-          RETURNING id_datos_dispercion_megas
-        `;
-        
-        const values = [
-          dispersionData.idFlujo,
-          dispersionData.vigencia_de_aplicacion,
-          parseInt(dispersionData.pronto_pago),
-          parseInt(dispersionData.precio_lista),
-          parseInt(dispersionData.aplicacion_montos_frontera),
-          parseInt(dispersionData.aplicacion_montos_nacionales),
-          JSON.stringify(dispersionData.megas),
-          parseFloat(dispersionData.porcentaje_de_descuento),
-          parseFloat(dispersionData.monto_de_descuento),
-          mesInicioConvertido,
-          parseInt(dispersionData.vigencia_en_meses),
-          parseInt(dispersionData.megas_de_subida),
-          parseInt(dispersionData.megas_de_bajada),
+          Number.parseInt(dispersionData.vigencia_en_meses),
+          Number.parseInt(dispersionData.megas_de_subida),
+          Number.parseInt(dispersionData.megas_de_bajada),
           dispersionData.nombreEditor,
           fechaModConvertida
         ];
-        
+
+        if (dispersionData.dispersiones !== undefined) {
+          updateFields += `, dispersiones = $${values.length + 1}`;
+          values.push(JSON.stringify(dispersionData.dispersiones));
+        }
+
+        values.push(dispersionData.idFlujo);
+
+        const updateQuery = `
+          UPDATE datos_dispercion_megas
+          SET ${updateFields}
+          WHERE id_promociones_ttp = $${values.length}
+          RETURNING id_datos_dispercion_megas
+        `;
+
+        const result = await client.query(updateQuery, values);
+        console.log("UPDATE result query: ", result);
+      } else {
+
+        let insertFields = `
+          id_promociones_ttp, vigencia_de_aplicacion, pronto_pago, precio_lista, aplicacion_montos_frontera,
+          aplicacion_montos_nacionales, megas, porcentaje_de_descuento, monto_de_descuento, mes_inicio,
+          vigencia_en_meses, megas_de_subida, megas_de_bajada, responsable_modificacion, ultima_modificacion
+        `;
+
+        let placeholders = `
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15
+        `;
+
+        let values = [
+          dispersionData.idFlujo,
+          dispersionData.vigencia_de_aplicacion,
+          Number.parseInt(dispersionData.pronto_pago),
+          Number.parseInt(dispersionData.precio_lista),
+          Number.parseInt(dispersionData.aplicacion_montos_frontera),
+          Number.parseInt(dispersionData.aplicacion_montos_nacionales),
+          JSON.stringify(dispersionData.megas),
+          Number.parseFloat(dispersionData.porcentaje_de_descuento),
+          Number.parseFloat(dispersionData.monto_de_descuento),
+          mesInicioConvertido,
+          Number.parseInt(dispersionData.vigencia_en_meses),
+          Number.parseInt(dispersionData.megas_de_subida),
+          Number.parseInt(dispersionData.megas_de_bajada),
+          dispersionData.nombreEditor,
+          fechaModConvertida
+        ];
+
+        if (dispersionData.dispersiones !== undefined) {
+          insertFields += `, dispersiones`;
+          placeholders += `, $${values.length + 1}`;
+          values.push(JSON.stringify(dispersionData.dispersiones));
+        }
+
+        const insertQuery = `
+          INSERT INTO datos_dispercion_megas
+          (${insertFields})
+          VALUES (${placeholders})
+          RETURNING id_datos_dispercion_megas
+        `;
+
         const result = await client.query(insertQuery, values);
+        console.log("INSERT result query: ", result);
       }
       
       await client.query('COMMIT');

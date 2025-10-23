@@ -24,7 +24,6 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers, body: JSON.stringify({ message: 'CORS preflight' }) };
   }
 
-  // Obtener el idFlujo desde queryStringParameters o desde el cuerpo
   const idFlujo = event.queryStringParameters?.idFlujo || (event.body ? JSON.parse(event.body).idFlujo : null);
 
   if (!idFlujo) {
@@ -56,7 +55,8 @@ exports.handler = async (event) => {
         megas_de_subida AS "megasDeSubida",
         megas_de_bajada AS "megasDeBajada",
         responsable_modificacion AS "nombreEditor",
-        ultima_modificacion AS "fechaMod"
+        ultima_modificacion AS "fechaMod",
+        dispersiones
       FROM datos_dispercion_combinada
       WHERE id_promociones_ttp = $1
     `;

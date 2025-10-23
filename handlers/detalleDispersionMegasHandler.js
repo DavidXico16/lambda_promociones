@@ -69,7 +69,8 @@ exports.handler = async (event) => {
           megas_de_subida AS "megasDeSubida",
           megas_de_bajada AS "megasDeBajada",
           responsable_modificacion AS "nombreEditor",
-          ultima_modificacion AS "fechaMod"
+          ultima_modificacion AS "fechaMod",
+          dispersiones
         FROM datos_dispercion_megas
         WHERE id_promociones_ttp = $1
       `;

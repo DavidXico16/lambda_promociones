@@ -19,12 +19,10 @@ exports.handler = async (event) => {
     'Access-Control-Allow-Headers': 'Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token'
   };
 
-  // Preflight
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: JSON.stringify({ message: 'CORS preflight' }) };
   }
 
-  // Solo se permite POST (para recibir idFlujo en el body)
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -33,7 +31,6 @@ exports.handler = async (event) => {
     };
   }
 
-  // Parsear body
   let body;
   try {
     body = event.body ? JSON.parse(event.body) : event;
@@ -42,7 +39,6 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Cuerpo JSON inválido' }) };
   }
 
-  // Validar campo requerido
   const requiredFields = ['idFlujo'];
   const missingFields = requiredFields.filter(f => !body[f]);
   if (missingFields.length > 0) {
@@ -72,7 +68,8 @@ exports.handler = async (event) => {
         mes_inicio AS "mesInicio",
         vigencia_en_meses AS "vigenciaEnMeses",
         responsable_modificacion AS "nombreEditor",
-        ultima_modificacion AS "fechaMod"
+        ultima_modificacion AS "fechaMod",
+        dispersiones
     FROM datos_dispercion_adicional
     WHERE id_promociones_ttp = $1
     `;

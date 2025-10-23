@@ -1,4 +1,5 @@
 // handlers/condicionesHandler.js
+const { parse } = require('dotenv');
 const { Client } = require('pg');
 
 const dbConfig = {
@@ -52,6 +53,7 @@ exports.handler = async (event) => {
       try {
         body = JSON.parse(event.body);
       } catch (parseError) {
+        console.log("ERROR: " + parseError)
         return {
           statusCode: 400,
           headers: headers,
@@ -63,7 +65,7 @@ exports.handler = async (event) => {
     }
     
     // Validar campos requeridos
-    const requiredFields = ['idFlujo', 'datos_condiciones'];
+    const requiredFields = ['idFlujo', 'datos_condiciones' ];
     const missingFields = requiredFields.filter(field => !body[field]);
     
     if (missingFields.length > 0) {
@@ -112,7 +114,7 @@ exports.handler = async (event) => {
         // UPDATE - Si existe, actualizar
         console.log(`Actualizando condiciones existentes para idFlujo: ${body.idFlujo}`);
         
-        const updateQuery = `
+        let updateQuery = `
           UPDATE datos_condiciones 
           SET urgente = $1,
               fin_promocion_y_producto = $2,
@@ -135,10 +137,9 @@ exports.handler = async (event) => {
               fecha_mod = $19,
               responsable_modificacion = $20,
               ultima_modificacion = CURRENT_TIMESTAMP
-          WHERE id_promociones_ttp = $21
-          RETURNING id_datos_condiciones
         `;
         
+        // Solo agregamos adicional si viene
         const values = [
           datosCondiciones.urgente,
           datosCondiciones.fin_promocion_y_producto,
@@ -159,26 +160,36 @@ exports.handler = async (event) => {
           datosCondiciones.sub,
           datosCondiciones.nombreEditor,
           fechaModConvertida,
-          datosCondiciones.nombreEditor, // responsable_modificacion usa el mismo valor que nombre_editor
-          body.idFlujo
+          datosCondiciones.nombreEditor
         ];
-        
+
+        if (body.adicionales) {
+          updateQuery += `, adicional = $21`;
+          values.push(JSON.stringify(body.adicionales));
+        }
+
+        // Finalmente el WHERE
+        updateQuery += ` WHERE id_promociones_ttp = $${values.length + 1} RETURNING id_datos_condiciones`;
+        values.push(body.idFlujo);
+
         console.log('UPDATE values:', values);
-        const result = await client.query(updateQuery, values);
+        await client.query(updateQuery, values);
         
       } else {
         // INSERT - Si no existe, crear nuevo registro
         console.log(`Creando nuevas condiciones para idFlujo: ${body.idFlujo}`);
         
-        const insertQuery = `
-          INSERT INTO datos_condiciones 
-          (id_promociones_ttp, urgente, fin_promocion_y_producto, campania_r_l_bot,
-           descuento_de_por_vida, bestfit, prorroteo, no_visible_en_front, determina_promocion,
-           es_comisionable, cupon, meses_pago_adelantado, porcentaje_pago_adelantado, automatica,
-           condiciones_promociones, perfil_promociones, comentarios, sub, 
-           nombre_editor, fecha_mod, responsable_modificacion, ultima_modificacion)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, CURRENT_TIMESTAMP)
-          RETURNING id_datos_condiciones
+        let insertFields = `
+          id_promociones_ttp, urgente, fin_promocion_y_producto, campania_r_l_bot,
+          descuento_de_por_vida, bestfit, prorroteo, no_visible_en_front, determina_promocion,
+          es_comisionable, cupon, meses_pago_adelantado, porcentaje_pago_adelantado, automatica,
+          condiciones_promociones, perfil_promociones, comentarios, sub, 
+          nombre_editor, fecha_mod, responsable_modificacion, ultima_modificacion
+        `;
+
+        let placeholders = `
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+          $15, $16, $17, $18, $19, $20, $21, CURRENT_TIMESTAMP
         `;
         
         const values = [
@@ -200,14 +211,30 @@ exports.handler = async (event) => {
           datosCondiciones.perfil_promociones,
           datosCondiciones.comentarios,
           datosCondiciones.sub,
-          datosCondiciones.nombreEditor, // nombre_editor
-          fechaModConvertida, // fecha_mod
-          datosCondiciones.nombreEditor, // responsable_modificacion (mismo que nombre_editor)
+          datosCondiciones.nombreEditor,
+          fechaModConvertida,
+          datosCondiciones.nombreEditor
         ];
-        
+
+        // Solo agregamos adicional si viene
+        if (body.adicionales) {
+          insertFields += `, adicional`;
+          placeholders += `, $${values.length + 1}`;
+          values.push(JSON.stringify(body.adicionales));
+        }
+
+        const insertQuery = `
+          INSERT INTO datos_condiciones (${insertFields})
+          VALUES (${placeholders})
+          RETURNING id_datos_condiciones
+        `;
+
         console.log('INSERT values:', values);
         console.log('Number of values:', values.length);
+
         const result = await client.query(insertQuery, values);
+
+        console.log("resultado : ", result);
       }
       
       await client.query('COMMIT');

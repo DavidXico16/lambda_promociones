@@ -39,6 +39,7 @@ exports.handler = async (event) => {
     let body;
     if (event.body) {
       try { body = JSON.parse(event.body); } catch (parseError) {
+        console.log("ERROR: ", parseError)
         return { statusCode: 400, headers, body: JSON.stringify({ error: 'Cuerpo de solicitud JSON inválido' }) };
       }
     } else { body = event; }
@@ -58,7 +59,7 @@ exports.handler = async (event) => {
     
     const numericFields = ['pronto_pago', 'precio_lista', 'aplicacion_montes_frontera', 'aplicacion_montes_nacionales', 
                           'vigencia_en_meses', 'megas_de_subida', 'megas_de_bajada'];
-    const invalidNumeric = numericFields.filter(field => isNaN(dispersionData[field]));
+    const invalidNumeric = numericFields.filter(field => Number.isNaN(dispersionData[field]));
     if (invalidNumeric.length > 0) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'Campos numéricos inválidos', invalid: invalidNumeric }) };
     }
@@ -90,66 +91,95 @@ exports.handler = async (event) => {
       const exists = checkResult.rows.length > 0;
       
       if (exists) {
-        const updateQuery = `
-          UPDATE datos_dispercion_combinada 
-          SET vigencia_de_aplicacion = $1, pronto_pago = $2, precio_lista = $3, aplicacion_montes_frontera = $4,
-              aplicacion_montes_nacionales = $5, adicionales = $6, promociones = $7, porcentaje_de_descuento = $8, 
-              monto_de_descuento = $9, mes_inicio = $10, vigencia_en_meses = $11, megas_de_subida = $12, 
-              megas_de_bajada = $13, responsable_modificacion = $14, ultima_modificacion = $15
-          WHERE id_promociones_ttp = $16
-          RETURNING id_datos_dispercion_combinada
+
+        let updateFields = `
+          vigencia_de_aplicacion = $1, pronto_pago = $2, precio_lista = $3, aplicacion_montes_frontera = $4,
+          aplicacion_montes_nacionales = $5, adicionales = $6, promociones = $7, porcentaje_de_descuento = $8,
+          monto_de_descuento = $9, mes_inicio = $10, vigencia_en_meses = $11, megas_de_subida = $12, 
+          megas_de_bajada = $13, responsable_modificacion = $14, ultima_modificacion = $15
         `;
-        
-        const values = [
+
+        let values = [
           dispersionData.vigencia_de_aplicacion,
-          parseInt(dispersionData.pronto_pago),
-          parseInt(dispersionData.precio_lista),
-          parseInt(dispersionData.aplicacion_montes_frontera),
-          parseInt(dispersionData.aplicacion_montes_nacionales),
+          Number.parseInt(dispersionData.pronto_pago),
+          Number.parseInt(dispersionData.precio_lista),
+          Number.parseInt(dispersionData.aplicacion_montes_frontera),
+          Number.parseInt(dispersionData.aplicacion_montes_nacionales),
           JSON.stringify(dispersionData.adicionales),
           JSON.stringify(dispersionData.promociones),
-          parseFloat(dispersionData.porcentaje_de_descuento),
-          parseFloat(dispersionData.monto_de_descuento),
+          Number.parseFloat(dispersionData.porcentaje_de_descuento),
+          Number.parseFloat(dispersionData.monto_de_descuento),
           mesInicioConvertido,
-          parseInt(dispersionData.vigencia_en_meses),
-          parseInt(dispersionData.megas_de_subida),
-          parseInt(dispersionData.megas_de_bajada),
-          dispersionData.nombreEditor,
-          fechaModConvertida,
-          dispersionData.idFlujo
-        ];
-        
-        const result = await client.query(updateQuery, values);
-      } else {
-        const insertQuery = `
-          INSERT INTO datos_dispercion_combinada 
-          (id_promociones_ttp, vigencia_de_aplicacion, pronto_pago, precio_lista, aplicacion_montes_frontera,
-           aplicacion_montes_nacionales, adicionales, promociones, porcentaje_de_descuento, monto_de_descuento, 
-           mes_inicio, vigencia_en_meses, megas_de_subida, megas_de_bajada, responsable_modificacion, ultima_modificacion)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-          RETURNING id_datos_dispercion_combinada
-        `;
-        
-        const values = [
-          dispersionData.idFlujo,
-          dispersionData.vigencia_de_aplicacion,
-          parseInt(dispersionData.pronto_pago),
-          parseInt(dispersionData.precio_lista),
-          parseInt(dispersionData.aplicacion_montes_frontera),
-          parseInt(dispersionData.aplicacion_montes_nacionales),
-          JSON.stringify(dispersionData.adicionales),
-          JSON.stringify(dispersionData.promociones),
-          parseFloat(dispersionData.porcentaje_de_descuento),
-          parseFloat(dispersionData.monto_de_descuento),
-          mesInicioConvertido,
-          parseInt(dispersionData.vigencia_en_meses),
-          parseInt(dispersionData.megas_de_subida),
-          parseInt(dispersionData.megas_de_bajada),
+          Number.parseInt(dispersionData.vigencia_en_meses),
+          Number.parseInt(dispersionData.megas_de_subida),
+          Number.parseInt(dispersionData.megas_de_bajada),
           dispersionData.nombreEditor,
           fechaModConvertida
         ];
-        
-        const result = await client.query(insertQuery, values);
+
+        if (dispersionData.dispersiones !== undefined) {
+          updateFields += `, dispersiones = $${values.length + 1}`;
+          values.push(JSON.stringify(dispersionData.dispersiones));
+        }
+
+        values.push(dispersionData.idFlujo); 
+
+        const updateQuery = `
+          UPDATE datos_dispercion_combinada 
+          SET ${updateFields}
+          WHERE id_promociones_ttp = $${values.length}
+          RETURNING id_datos_dispercion_combinada
+        `;
+
+        await client.query(updateQuery, values);
+
+      } else {
+
+        let insertFields = `
+          id_promociones_ttp, vigencia_de_aplicacion, pronto_pago, precio_lista, aplicacion_montes_frontera,
+          aplicacion_montes_nacionales, adicionales, promociones, porcentaje_de_descuento, monto_de_descuento,
+          mes_inicio, vigencia_en_meses, megas_de_subida, megas_de_bajada, responsable_modificacion, ultima_modificacion
+        `;
+
+        let placeholders = `
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16
+        `;
+
+        let valuesInsert = [
+          dispersionData.idFlujo,
+          dispersionData.vigencia_de_aplicacion,
+          Number.parseInt(dispersionData.pronto_pago),
+          Number.parseInt(dispersionData.precio_lista),
+          Number.parseInt(dispersionData.aplicacion_montes_frontera),
+          Number.parseInt(dispersionData.aplicacion_montes_nacionales),
+          JSON.stringify(dispersionData.adicionales),
+          JSON.stringify(dispersionData.promociones),
+          Number.parseFloat(dispersionData.porcentaje_de_descuento),
+          Number.parseFloat(dispersionData.monto_de_descuento),
+          mesInicioConvertido,
+          Number.parseInt(dispersionData.vigencia_en_meses),
+          Number.parseInt(dispersionData.megas_de_subida),
+          Number.parseInt(dispersionData.megas_de_bajada),
+          dispersionData.nombreEditor,
+          fechaModConvertida
+        ];
+
+        if (dispersionData.dispersiones !== undefined) {
+          insertFields += `, dispersiones`;
+          placeholders += `, $${valuesInsert.length + 1}`;
+          valuesInsert.push(JSON.stringify(dispersionData.dispersiones));
+        }
+
+        const insertQuery = `
+          INSERT INTO datos_dispercion_combinada
+          (${insertFields})
+          VALUES (${placeholders})
+          RETURNING id_datos_dispercion_combinada
+        `;
+
+        const result = await client.query(insertQuery, valuesInsert);
+
+        console.log("result query: ", result)
       }
       
       await client.query('COMMIT');
