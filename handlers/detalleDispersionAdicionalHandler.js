@@ -1,3 +1,4 @@
+// handlers/getDispersionAdicionalHandler.js
 const { Client } = require('pg');
 
 const dbConfig = {
@@ -35,17 +36,15 @@ exports.handler = async (event) => {
   try {
     body = event.body ? JSON.parse(event.body) : event;
   } catch (error) {
-    console.log("ERROR: ", error)
+    console.error("Error parsing body:", error);
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Cuerpo JSON inválido' }) };
   }
 
-  const requiredFields = ['idFlujo'];
-  const missingFields = requiredFields.filter(f => !body[f]);
-  if (missingFields.length > 0) {
+  if (!body.idFlujo) {
     return {
       statusCode: 400,
       headers,
-      body: JSON.stringify({ error: 'Campo requerido faltante', missing: missingFields })
+      body: JSON.stringify({ error: 'Campo requerido faltante: idFlujo' })
     };
   }
 
@@ -55,23 +54,20 @@ exports.handler = async (event) => {
     await client.connect();
 
     const query = `
-    SELECT 
+      SELECT 
         id_promociones_ttp AS "idFlujo",
-        vigencia_de_aplicacion AS "vigenciaDeAplicacion",
-        pronto_pago AS "prontoPago",
-        precio_lista AS "precioLista",
-        aplicacion_montes_frontera AS "aplicacionMontesFrontera",
-        aplicacion_montes_nacionales AS "aplicacionMontesNacionales",
-        adicionales AS "adicionales",
-        porcentaje_de_descuento AS "porcentajeDeDescuento",
-        monto_de_descuento AS "montoDeDescuento",
-        mes_inicio AS "mesInicio",
-        vigencia_en_meses AS "vigenciaEnMeses",
+        id_promocion AS "idPromocion",
+        vigencia_de_aplicacion AS "vigencia_de_aplicacion",
+        pronto_pago AS "pronto_pago",
+        precio_lista AS "precio_lista",
+        aplicacion_montos_frontera AS "aplicación_montos_frontera",
+        aplicacion_montos_nacionales AS "aplicación_montos_nacionales",
         responsable_modificacion AS "nombreEditor",
-        ultima_modificacion AS "fechaMod",
-        dispersiones
-    FROM datos_dispercion_adicional
-    WHERE id_promociones_ttp = $1
+        ultima_modificacion AS "fecha_mod",
+        sub AS "sub",
+        dispersiones AS "dispersiones"
+      FROM datos_dispercion_adicional
+      WHERE id_promociones_ttp = $1
     `;
 
     const result = await client.query(query, [body.idFlujo]);
@@ -87,14 +83,17 @@ exports.handler = async (event) => {
       };
     }
 
-    // Parsear el campo JSON adicionales si existe
+    // Parsear campos JSONB si existen
     const parsedData = result.rows.map(row => {
-      if (row.adicionales) {
-        try {
-          row.adicionales = JSON.parse(row.adicionales);
-        } catch {
-          console.warn('No se pudo parsear el campo adicionales como JSON');
-        }
+      try {
+        if (typeof row.adicionales === 'string') row.adicionales = JSON.parse(row.adicionales);
+      } catch (e) {
+        console.warn('No se pudo parsear el campo adicionales como JSON:', e);
+      }
+      try {
+        if (typeof row.dispersiones === 'string') row.dispersiones = JSON.parse(row.dispersiones);
+      } catch (e) {
+        console.warn('No se pudo parsear el campo dispersiones como JSON:', e);
       }
       return row;
     });
