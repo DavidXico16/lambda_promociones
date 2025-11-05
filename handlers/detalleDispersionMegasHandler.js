@@ -1,3 +1,4 @@
+// handlers/simuladorProgresiveHandler.js
 const { Client } = require('pg');
 
 const dbConfig = {
@@ -6,46 +7,52 @@ const dbConfig = {
   database: process.env.DB_NAME,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 };
 
 exports.handler = async (event) => {
-  console.log('Get Dispersion Megas handler - Event received:', JSON.stringify(event, null, 2));
+  console.log('Simulador Progressive GET - Event received:', JSON.stringify(event, null, 2));
 
   const headers = {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
     'Access-Control-Allow-Headers':
-      'Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token'
+      'Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token',
   };
 
-  // Respuesta para CORS
+  // ✅ CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: JSON.stringify({ message: 'CORS preflight' }) };
   }
 
   try {
-    let body;
+    let body = {};
+
+    // ✅ Permite que el body venga como JSON en el evento
     if (event.body) {
-      try { 
-        body = JSON.parse(event.body); 
-      } catch (parseError) {
-        console.error('Error al parsear body:', parseError);
-        return { statusCode: 400, headers, body: JSON.stringify({ error: 'Cuerpo de solicitud JSON inválido' }) };
+      try {
+        body = JSON.parse(event.body);
+      } catch (err) {
+        console.error('Error al parsear el body:', err);
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Cuerpo JSON inválido' }),
+        };
       }
-    } else { 
-      body = event; 
+    } else {
+      body = event; // fallback por si lo mandan directo
     }
 
     const { idFlujo } = body;
 
-    // Validación de campo requerido
+    // ✅ Validación del campo
     if (!idFlujo) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'El campo idFlujo es requerido' })
+        body: JSON.stringify({ error: 'El campo idFlujo es requerido en el body' }),
       };
     }
 
@@ -59,15 +66,6 @@ exports.handler = async (event) => {
           vigencia_de_aplicacion AS "vigenciaDeAplicacion",
           pronto_pago AS "prontoPago",
           precio_lista AS "precioLista",
-          aplicacion_montos_frontera AS "aplicacionMontosFrontera",
-          aplicacion_montos_nacionales AS "aplicacionMontosNacionales",
-          megas AS "megas",
-          porcentaje_de_descuento AS "porcentajeDeDescuento",
-          monto_de_descuento AS "montoDeDescuento",
-          mes_inicio AS "mesInicio",
-          vigencia_en_meses AS "vigenciaEnMeses",
-          megas_de_subida AS "megasDeSubida",
-          megas_de_bajada AS "megasDeBajada",
           responsable_modificacion AS "nombreEditor",
           ultima_modificacion AS "fechaMod",
           dispersiones
@@ -81,7 +79,7 @@ exports.handler = async (event) => {
         return {
           statusCode: 404,
           headers,
-          body: JSON.stringify({ message: `No se encontraron datos para idFlujo ${idFlujo}` })
+          body: JSON.stringify({ message: `No se encontraron datos para idFlujo ${idFlujo}` }),
         };
       }
 
@@ -89,16 +87,16 @@ exports.handler = async (event) => {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          message: 'Datos de dispersión megas obtenidos exitosamente',
-          data: result.rows[0]
-        })
+          message: 'Datos obtenidos exitosamente',
+          data: result.rows[0],
+        }),
       };
     } catch (dbError) {
       console.error('Database error:', dbError);
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({ error: 'Error en base de datos', details: dbError.message })
+        body: JSON.stringify({ error: 'Error en base de datos', details: dbError.message }),
       };
     } finally {
       await client.end();
@@ -108,7 +106,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Error interno del servidor', details: error.message })
+      body: JSON.stringify({ error: 'Error interno del servidor', details: error.message }),
     };
   }
 };

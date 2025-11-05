@@ -3,7 +3,7 @@ const handlers = {
   'GET:/promociones/dashboard': require('./handlers/dashboardHandler'),
   'GET:/dashboard': require('./handlers/dashboardHandler'),
   'POST:/dispersion-descuento': require('./handlers/dispersionDescuentoHandler'),
-  
+
   'POST:/dispersion-adicional': require('./handlers/dispersionAdicionalHandler'),
   'POST:/dispersion-megas': require('./handlers/dispersionMegasHandler'),
   'POST:/dispersion-combinada': require('./handlers/dispersionCombinadaHandler'),
@@ -29,7 +29,8 @@ const handlers = {
   'POST:/detalleDispersionMegas': require('./handlers/detalleDispersionMegasHandler'),
   'POST:/detalleDispersionCombinada': require('./handlers/detalleDispersionCombinadaHandler'),
   'POST:/simuladorGrafo': require('./handlers/grafosSimuladorHandler'),
-  'POST:/detalleSimuladorGrafo': require('./handlers/detalleGrafoSimuladorHandler')
+  'POST:/detalleSimuladorGrafo': require('./handlers/detalleGrafoSimuladorHandler'),
+  'POST:/getCuentasNoCoinciden': require('./handlers/getCuentasNoCoincidenHnadler')
 };
 
 exports.handler = async (event) => {
