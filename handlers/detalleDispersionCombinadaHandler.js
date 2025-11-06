@@ -43,14 +43,15 @@ exports.handler = async (event) => {
       SELECT 
         id_promocion AS "idPromocion",
         id_promociones_ttp AS "idFlujo",
-        vigencia_de_aplicacion AS "vigencia_de_aplicacion",
-        pronto_pago AS "pronto_pago",
-        precio_lista AS "precio_lista",
-        aplicacion_montes_frontera AS "aplicacion_montos_frontera",
-        aplicacion_montes_nacionales AS "aplicacion_montos_nacionales",
+        vigencia_de_aplicacion AS "vigenciaDeAplicacion",
+        pronto_pago AS "prontoPago",
+        precio_lista AS "precioLista",
+        aplicacion_montes_frontera AS "aplicacionMontosFrontera",
+        aplicacion_montes_nacionales AS "aplicacionMontosNacionales",
         responsable_modificacion AS "nombreEditor",
-        ultima_modificacion AS "fecha_mod",
-        dispersiones
+        ultima_modificacion AS "fechaMod",
+        dispersiones,
+        tipo_dispersion AS "tipoDispersion"
       FROM datos_dispercion_combinada
       WHERE id_promociones_ttp = $1
     `;

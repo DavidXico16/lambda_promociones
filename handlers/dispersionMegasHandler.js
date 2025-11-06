@@ -39,7 +39,7 @@ exports.handler = async (event) => {
 
     const requiredFields = [
       'vigencia_de_aplicacion', 'pronto_pago', 'precio_lista',
-      'idFlujo', 'fecha_mod', 'nombreEditor', 'sub', 'dispersiones'
+      'idFlujo', 'fecha_mod', 'nombreEditor', 'sub', 'dispersiones', 'tipo_dispersion'
     ];
 
     const missingFields = requiredFields.filter(field => dispersionData[field] === undefined || dispersionData[field] === null);
@@ -91,7 +91,8 @@ exports.handler = async (event) => {
               mes_inicio = $13,
               vigencia_en_meses = $14,
               megas_de_subida = $15,
-              megas_de_bajada = $16
+              megas_de_bajada = $16,
+              tipo_dispersion = $17
           WHERE id_promociones_ttp = $7
           RETURNING id_datos_dispercion_megas
         `;
@@ -112,7 +113,8 @@ exports.handler = async (event) => {
           fechaModConvertida,
           0,
           0,
-          0
+          0,
+          dispersionData.tipo_dispersion
         ];
 
         await client.query(updateQuery, values);
@@ -122,8 +124,9 @@ exports.handler = async (event) => {
           INSERT INTO datos_dispercion_megas
           (id_promociones_ttp, vigencia_de_aplicacion, pronto_pago, precio_lista,
            dispersiones, responsable_modificacion, ultima_modificacion, megas, aplicacion_montos_frontera, aplicacion_montos_nacionales,
-           porcentaje_de_descuento, monto_de_descuento, mes_inicio, vigencia_en_meses, megas_de_subida, megas_de_bajada)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+           porcentaje_de_descuento, monto_de_descuento, mes_inicio, vigencia_en_meses, megas_de_subida, megas_de_bajada,
+           tipo_dispersion)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
           RETURNING id_datos_dispercion_megas
         `;
 
@@ -143,7 +146,8 @@ exports.handler = async (event) => {
           fechaModConvertida,
           0,
           0,
-          0
+          0,
+          dispersionData.tipo_dispersion
         ];
 
         await client.query(insertQuery, values);

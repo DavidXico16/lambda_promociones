@@ -29,7 +29,6 @@ exports.handler = async (event) => {
   try {
     let body = {};
 
-    // ✅ Permite que el body venga como JSON en el evento
     if (event.body) {
       try {
         body = JSON.parse(event.body);
@@ -42,12 +41,11 @@ exports.handler = async (event) => {
         };
       }
     } else {
-      body = event; // fallback por si lo mandan directo
+      body = event;
     }
 
     const { idFlujo } = body;
 
-    // ✅ Validación del campo
     if (!idFlujo) {
       return {
         statusCode: 400,
@@ -68,6 +66,7 @@ exports.handler = async (event) => {
           precio_lista AS "precioLista",
           responsable_modificacion AS "nombreEditor",
           ultima_modificacion AS "fechaMod",
+          tipo_dispersion AS "tipoDispersion",
           dispersiones
         FROM datos_dispercion_megas
         WHERE id_promociones_ttp = $1

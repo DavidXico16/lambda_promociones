@@ -70,6 +70,7 @@ exports.handler = async (event) => {
       vigencia_en_meses AS "vigenciaEnMeses",
       responsable_modificacion AS "nombreEditor",
       ultima_modificacion AS "fechaMod",
+      tipo_dispersion AS "tipoDispersion",
       dispersiones
     FROM datos_dispercion_descuento
     WHERE id_promociones_ttp = $1

@@ -49,7 +49,7 @@ exports.handler = async (event) => {
     const requiredFields = [
       'vigencia_de_aplicacion', 'pronto_pago', 'precio_lista', 'aplicacion_montos_frontera', 
       'aplicacion_montos_nacionales', 'planes', 'porcentaje_de_descuento', 'monto_de_descuento',
-      'mes_inicio', 'vigencia_en_meses', 'idFlujo', 'sub', 'nombreEditor', 'fecha_mod'
+      'mes_inicio', 'vigencia_en_meses', 'idFlujo', 'sub', 'nombreEditor', 'fecha_mod', 'tipo_dispersion'
     ];
     
     const missingFields = requiredFields.filter(field => !dispersionData[field]);
@@ -95,7 +95,8 @@ exports.handler = async (event) => {
         let updateFields = `
           vigencia_de_aplicacion = $1, pronto_pago = $2, precio_lista = $3, aplicacion_montos_frontera = $4,
           aplicacion_montos_nacionales = $5, planes = $6, porcentaje_de_descuento = $7, monto_de_descuento = $8,
-          mes_inicio = $9, vigencia_en_meses = $10, responsable_modificacion = $11, ultima_modificacion = $12
+          mes_inicio = $9, vigencia_en_meses = $10, responsable_modificacion = $11, ultima_modificacion = $12,
+          tipo_dispersion = $13
         `;
 
         let values = [
@@ -110,7 +111,8 @@ exports.handler = async (event) => {
           mesInicioConvertido,
           Number.parseInt(dispersionData.vigencia_en_meses),
           dispersionData.nombreEditor,
-          fechaModConvertida
+          fechaModConvertida,
+          dispersionData.tipo_dispersion
         ];
 
         if (dispersionData.dispersiones !== undefined) {
@@ -134,11 +136,12 @@ exports.handler = async (event) => {
          let insertFields = `
           id_promociones_ttp, vigencia_de_aplicacion, pronto_pago, precio_lista, aplicacion_montos_frontera,
           aplicacion_montos_nacionales, planes, porcentaje_de_descuento, monto_de_descuento, mes_inicio,
-          vigencia_en_meses, responsable_modificacion, ultima_modificacion
+          vigencia_en_meses, responsable_modificacion, ultima_modificacion,
+          tipo_dispersion
         `;
 
         let placeholders = `
-          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, $14
         `;
 
         let values = [
@@ -154,10 +157,10 @@ exports.handler = async (event) => {
           mesInicioConvertido,
           Number.parseInt(dispersionData.vigencia_en_meses),
           dispersionData.nombreEditor,
-          fechaModConvertida
+          fechaModConvertida,
+          dispersionData.tipo_dispersion
         ];
 
-        // ✅ SOLO si viene "dispersiones", lo insertamos
         if (dispersionData.dispersiones !== undefined) {
           insertFields += `, dispersiones`;
           placeholders += `, $${values.length + 1}`;

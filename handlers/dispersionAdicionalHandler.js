@@ -46,7 +46,8 @@ exports.handler = async (event) => {
       'fecha_mod',
       'nombreEditor',
       'sub',
-      'dispersiones'
+      'dispersiones',
+      'tipo_dispersion'
     ];
 
     const missingFields = requiredFields.filter(field => !body[field]);
@@ -103,7 +104,8 @@ exports.handler = async (event) => {
           porcentaje_de_descuento = $12,
           monto_de_descuento = $13,
           mes_inicio = $14,
-          vigencia_en_meses = $15
+          vigencia_en_meses = $15,
+          tipo_dispersion = $17
         WHERE id_promociones_ttp = $16
         RETURNING id_datos_dispercion_adicional
       `;
@@ -124,7 +126,8 @@ exports.handler = async (event) => {
         0,
         fechaMod,
         0,
-        body.idFlujo
+        body.idFlujo,
+        body.tipo_dispersion
       ]);
     } else {
       const insertQuery = `
@@ -132,8 +135,9 @@ exports.handler = async (event) => {
           id_promociones_ttp, vigencia_de_aplicacion, pronto_pago, precio_lista, 
           aplicacion_montos_frontera, aplicacion_montos_nacionales, dispersiones, 
           responsable_modificacion, ultima_modificacion, fecha_creacion, id_promocion, sub, 
-          adicionales, porcentaje_de_descuento, monto_de_descuento, mes_inicio, vigencia_en_meses
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16, $17)
+          adicionales, porcentaje_de_descuento, monto_de_descuento, mes_inicio, vigencia_en_meses,
+          tipo_dispersion
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16, $17, $18)
         RETURNING id_datos_dispercion_adicional
       `;
 
@@ -154,7 +158,8 @@ exports.handler = async (event) => {
         0,
         0,
         fechaMod,
-        0
+        0,
+        body.tipo_dispersion
       ]);
     }
 
