@@ -16,7 +16,7 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       Code:
         S3Bucket: "lambdasttp"
-        S3Key: "promociones/js007.zip"
+        S3Key: "promociones/js008.zip"
       Timeout: 30
       Environment:
         Variables:

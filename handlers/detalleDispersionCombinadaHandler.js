@@ -24,6 +24,7 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers, body: JSON.stringify({ message: 'CORS preflight' }) };
   }
 
+  // Obtener idFlujo desde query o body
   const idFlujo = event.queryStringParameters?.idFlujo || (event.body ? JSON.parse(event.body).idFlujo : null);
 
   if (!idFlujo) {
@@ -40,22 +41,15 @@ exports.handler = async (event) => {
   try {
     const query = `
       SELECT 
+        id_promocion AS "idPromocion",
         id_promociones_ttp AS "idFlujo",
-        vigencia_de_aplicacion AS "vigenciaDeAplicacion",
-        pronto_pago AS "prontoPago",
-        precio_lista AS "precioLista",
-        aplicacion_montes_frontera AS "aplicacionMontesFrontera",
-        aplicacion_montes_nacionales AS "aplicacionMontesNacionales",
-        adicionales AS "adicionales",
-        promociones AS "promociones",
-        porcentaje_de_descuento AS "porcentajeDeDescuento",
-        monto_de_descuento AS "montoDeDescuento",
-        mes_inicio AS "mesInicio",
-        vigencia_en_meses AS "vigenciaEnMeses",
-        megas_de_subida AS "megasDeSubida",
-        megas_de_bajada AS "megasDeBajada",
+        vigencia_de_aplicacion AS "vigencia_de_aplicacion",
+        pronto_pago AS "pronto_pago",
+        precio_lista AS "precio_lista",
+        aplicacion_montes_frontera AS "aplicacion_montos_frontera",
+        aplicacion_montes_nacionales AS "aplicacion_montos_nacionales",
         responsable_modificacion AS "nombreEditor",
-        ultima_modificacion AS "fechaMod",
+        ultima_modificacion AS "fecha_mod",
         dispersiones
       FROM datos_dispercion_combinada
       WHERE id_promociones_ttp = $1
@@ -71,12 +65,23 @@ exports.handler = async (event) => {
       };
     }
 
+    // Parsear el campo dispersiones si es texto
+    let data = result.rows[0];
+    if (typeof data.dispersiones === 'string') {
+      try {
+        data.dispersiones = JSON.parse(data.dispersiones);
+      } catch (err) {
+        console.warn('No se pudo parsear dispersiones como JSON:', err);
+      }
+    }
+
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ 
-        message: 'Datos de dispersión Combinada obtenidos exitosamente',
-        data: result.rows[0] })
+      body: JSON.stringify({
+        message: 'Datos de dispersión combinada obtenidos exitosamente',
+        data
+      })
     };
 
   } catch (error) {
