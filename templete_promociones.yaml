@@ -16,7 +16,7 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       Code:
         S3Bucket: "lambdasttp"
-        S3Key: "promociones/js001.zip"
+        S3Key: "promociones/js003.zip"
       Timeout: 30
       Environment:
         Variables:
@@ -1333,6 +1333,50 @@ Resources:
             method.response.header.Access-Control-Allow-Origin: true
             method.response.header.Access-Control-Allow-Methods: true
 
+# ==================== GET PROMOCIONES APLICADAS ====================
+  PromocionesAplicadasResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ParentId: !GetAtt ApiGateway.RootResourceId
+      PathPart: 'getPromocionesAplicadas'
+
+  PromocionesAplicadasMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref PromocionesAplicadasResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostgresLambda.Arn}/invocations'
+
+  PromocionesAplicadasOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref PromocionesAplicadasResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+
   # Configuración CORS global
   GatewayResponse:
     Type: AWS::ApiGateway::GatewayResponse
@@ -1402,6 +1446,8 @@ Resources:
       - DetalleSimuladorGrafoOptionsMethod
       - CuentasNoCoincidenMethod
       - CuentasNoCoincidenOptionsMethod
+      - PromocionesAplicadasMethod
+      - PromocionesAplicadasOptionsMethod
     Properties:
       RestApiId: !Ref ApiGateway
       StageName: !Ref EnvironmentName
@@ -1523,6 +1569,10 @@ Outputs:
   CuentasNoCoincidenApiUrl:
     Description: 'URL del endpoint de detalle de la tabla cuentas_no_coinciden'
     Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/getCuentasNoCoinciden'   
+
+  PromocionesAplicadasApiUrl:
+    Description: 'URL del endpoint que regesa datos calculados de promociones_ttp, simulador_planes_cuentas, datos_condiciones y datos_dispercion_adicional'
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/getPromocionesAplicadas'   
 
   ApiGatewayId:
     Description: 'ID del API Gateway'
