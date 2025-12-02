@@ -26,144 +26,115 @@ exports.handler = async (event) => {
   }
 
   try {
-    let body = {};
-
-    if (event.body) {
-      try {
-        body = JSON.parse(event.body);
-      } catch (err) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: 'Cuerpo JSON inválido' }),
-        };
-      }
-    } else {
-      body = event;
-    }
-
-    const { idFlujo } = body;
-
-    if (!idFlujo) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'El campo idFlujo es requerido' }),
-      };
-    }
-
     const client = new Client(dbConfig);
     await client.connect();
 
     try {
-        // Obtener la info de promociones_ttp
-        const queryPromo = `
-            SELECT *
-            FROM promociones_ttp
-            WHERE id_promociones_ttp = $1
-        `;
+      // 1️⃣ Obtener todas las promociones
+      const promocionesQuery = `
+        SELECT *
+        FROM promociones_ttp
+        ORDER BY id_promociones_ttp ASC
+      `;
+      const promociones = await client.query(promocionesQuery);
 
-        const promoResult = await client.query(queryPromo, [idFlujo]);
-
-        if (promoResult.rows.length === 0) {
-            return {
-            statusCode: 404,
-            headers,
-            body: JSON.stringify({ message: `No existe id_promociones_ttp ${idFlujo}` }),
-            };
-        }
-
-        // Conteo en simulador_planes_cuentas
-        const queryPlanes = `
-        SELECT COUNT(*) AS total_coincidencias
-        FROM simulador_planes_cuentas
-        WHERE id_promociones_ttp = $1
-        `;
-        const planesResult = await client.query(queryPlanes, [idFlujo]);
-
-        // Obtener datos en datos_condiciones
-        const queryCountCondiciones = `
-            SELECT COUNT(*) AS total_condiciones_promociones
-            FROM datos_condiciones
-            WHERE id_promociones_ttp = $1
-        `;
-        const countCondicionesResult = await client.query(queryCountCondiciones, [idFlujo]);
-
-
-        // Obtener 
-        const queryCondiciones = `
-            SELECT condiciones_promociones
-            FROM datos_condiciones
-            WHERE id_promociones_ttp = $1
-        `;
-        const condicionesResult = await client.query(queryCondiciones, [idFlujo]);
-
-
-        // Obtener suma de campo monto_de_descuento
-        const queryMontoDescuentoCondiciones = `
-            SELECT SUM(monto_de_descuento) AS total_monto_descuento
-            FROM datos_dispercion_adicional
-            WHERE id_promociones_ttp = $1
-        `;
-        const montoDescuentoResult = await client.query(queryMontoDescuentoCondiciones, [idFlujo]);
-
-        
-        // Obtener datos en datos_dispercion_adicional
-        const querytipoAplicacion = `
-            SELECT 
-                tipo_dispersion,
-                pronto_pago,
-                precio_lista,
-                CASE
-                    WHEN pronto_pago = 1 AND precio_lista = 1 THEN 'monto con impuestos'
-                    WHEN pronto_pago = 1 AND precio_lista <> 1 THEN 'monto pronto pago'
-                    WHEN precio_lista = 1 AND pronto_pago <> 1 THEN 'monto precio lista'
-                    ELSE 'NA'
-                END AS resultado
-            FROM datos_dispercion_adicional
-            WHERE id_promociones_ttp = $1
-        `;
-        const tipoAplicacionResult = await client.query( querytipoAplicacion, [idFlujo] );
-
-        // 4️⃣ Respuesta final
+      if (promociones.rows.length === 0) {
         return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({
-            message: 'Datos obtenidos exitosamente',
-            data: {
-                idFlujo: promoResult.rows[0].id_promociones_ttp,
-                nombre_promocion: promoResult.rows[0].nombre_promocion,
-                total_planes: planesResult.rows[0].total_coincidencias ,
-                total_cuentas: countCondicionesResult.rows[0].total_condiciones_promociones,
-                total_monto_descuento: montoDescuentoResult.rows[0].total_monto_descuento != null ? montoDescuentoResult.rows[0].total_monto_descuento : "0",
-                tipo_dispersion: tipoAplicacionResult.rows[0] != null ? tipoAplicacionResult.rows[0].tipo_dispersion : "",
-                tipo_aplicacion: tipoAplicacionResult.rows[0] != null ? tipoAplicacionResult.rows[0].resultado : "",
-                fecha: promoResult.rows[0].fecha_creacion,
-                responsable_promocion: promoResult.rows[0].responsable_creacion
-            },
-            }),
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ message: 'No existen promociones registradas' }),
         };
+      }
 
-    } catch (dbError) {
-      console.error('Database error:', dbError);
+      // 2️⃣ Recorrer todas las promociones
+      const resultados = [];
+
+      for (const promo of promociones.rows) {
+        const idPromo = promo.id_promociones_ttp;
+
+        // COUNT simulador_planes_cuentas
+        const planesResult = await client.query(
+          `SELECT COUNT(*) AS total FROM simulador_planes_cuentas WHERE id_promociones_ttp = $1`,
+          [idPromo]
+        );
+
+        // COUNT datos_condiciones
+        const condicionesCount = await client.query(
+          `SELECT COUNT(*) AS total FROM datos_condiciones WHERE id_promociones_ttp = $1`,
+          [idPromo]
+        );
+
+        // condiciones
+        const condicionesDetalle = await client.query(
+          `SELECT condiciones_promociones FROM datos_condiciones WHERE id_promociones_ttp = $1`,
+          [idPromo]
+        );
+
+        // SUM monto_de_descuento
+        const montoDescuento = await client.query(
+          `SELECT SUM(monto_de_descuento) AS total FROM datos_dispercion_adicional WHERE id_promociones_ttp = $1`,
+          [idPromo]
+        );
+
+        // tipo_dispersion y tipo_aplicacion
+        const tipoAplicacion = await client.query(`
+            SELECT 
+              tipo_dispersion,
+              pronto_pago,
+              precio_lista,
+              CASE
+                WHEN pronto_pago = 1 AND precio_lista = 1 THEN 'monto con impuestos'
+                WHEN pronto_pago = 1 AND precio_lista <> 1 THEN 'monto pronto pago'
+                WHEN precio_lista = 1 AND pronto_pago <> 1 THEN 'monto precio lista'
+                ELSE 'NA'
+              END AS resultado
+            FROM datos_dispercion_adicional
+            WHERE id_promociones_ttp = ${idPromo}
+            LIMIT 1
+        `);
+
+        resultados.push({
+          id_promociones_ttp: idPromo,
+          nombre_promocion: promo.nombre_promocion,
+          total_planes: planesResult.rows[0].total,
+          total_condiciones: condicionesCount.rows[0].total,
+          condiciones: condicionesDetalle.rows.map(r => r.condiciones_promociones),
+          total_monto_descuento:
+            montoDescuento.rows[0].total !== null ? montoDescuento.rows[0].total : "0",
+          tipo_dispersion: tipoAplicacion.rows[0]?.tipo_dispersion || "",
+          tipo_aplicacion: tipoAplicacion.rows[0]?.resultado || "",
+          fecha_creacion: promo.fecha_creacion,
+          responsable_promocion: promo.responsable_creacion,
+        });
+      }
+
+      // 3️⃣ Respuesta final
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          message: "Datos obtenidos exitosamente",
+          data: resultados,
+        }),
+      };
+
+    } catch (err) {
+      console.error("Database error:", err);
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({
-          error: 'Error en base de datos',
-          details: dbError.message,
-        }),
+        body: JSON.stringify({ error: "Error en base de datos", details: err.message }),
       };
     } finally {
       await client.end();
     }
+
   } catch (error) {
-    console.error('Error general en handler:', error);
+    console.error("Error general:", error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Error interno del servidor', details: error.message }),
+      body: JSON.stringify({ error: "Error interno del servidor", details: error.message }),
     };
   }
 };

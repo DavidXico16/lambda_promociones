@@ -15,12 +15,12 @@ Resources:
       Handler: index.handler
       Role: !GetAtt LambdaExecutionRole.Arn
       Code:
-        S3Bucket: "lambdasttp"
-        S3Key: "promociones/js003.zip"
+        S3Bucket: "lambdas-ttp"
+        S3Key: "promociones/js001.zip"
       Timeout: 30
       Environment:
         Variables:
-          DB_HOST: 'database-1-instance-1.czoco8oa6f0w.us-east-1.rds.amazonaws.com'
+          DB_HOST: 'database-1-instance-1.cmtmyua0wk2k.us-east-1.rds.amazonaws.com'
           DB_PORT: '5432'
           DB_NAME: 'postgres'
           DB_USER: 'postgres'
@@ -1548,7 +1548,6 @@ Outputs:
   DetalleAdicionalApiUrl:
     Description: 'URL del endpoint detalle de adicional'
     Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/detalleDispersionAdicional'
-  ApiGatewayId:
 
   DetalleMegasApiUrl:
     Description: 'URL del endpoint detalle de megas'
