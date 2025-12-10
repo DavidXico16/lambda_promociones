@@ -1,5 +1,4 @@
 // handlers/condicionesHandler.js
-const { parse } = require('dotenv');
 const { Client } = require('pg');
 
 const dbConfig = {
@@ -25,13 +24,15 @@ function convertirFecha(fecha) {
   if (partes.length === 3) {
     return `${partes[2]}-${partes[1]}-${partes[0]}`;
   }
-  
+
   return fecha;
 }
 
 exports.handler = async (event) => {
-  console.log('Condiciones handler - Event received:', JSON.stringify(event, null, 2));
-  
+  console.log('\n===== EVENTO RECEIVED =====');
+  console.log(JSON.stringify(event, null, 2));
+  console.log('===========================\n');
+
   const headers = {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
@@ -53,67 +54,79 @@ exports.handler = async (event) => {
       try {
         body = JSON.parse(event.body);
       } catch (parseError) {
-        console.log("ERROR: " + parseError)
+        console.log("❌ ERROR AL PARSEAR BODY:", parseError);
         return {
           statusCode: 400,
-          headers: headers,
+          headers,
           body: JSON.stringify({ error: 'Cuerpo de solicitud JSON inválido' })
         };
       }
     } else {
       body = event;
     }
-    
-    // Validar campos requeridos
-    const requiredFields = ['idFlujo', 'datos_condiciones' ];
+
+    console.log("\n===== BODY PARSEADO =====");
+    console.log(JSON.stringify(body, null, 2));
+    console.log("=========================\n");
+
+    // Validaciones
+    const requiredFields = ['idFlujo', 'datos_condiciones'];
     const missingFields = requiredFields.filter(field => !body[field]);
-    
+
     if (missingFields.length > 0) {
       return {
         statusCode: 400,
-        headers: headers,
-        body: JSON.stringify({ 
-          error: 'Campos requeridos faltantes', 
-          missing: missingFields 
+        headers,
+        body: JSON.stringify({
+          error: 'Campos requeridos faltantes',
+          missing: missingFields
         })
       };
     }
-    
-    // Validar campos dentro de datos_condiciones
+
     const datosCondiciones = body.datos_condiciones;
+
     const requiredDatosFields = ['sub', 'nombreEditor', 'fecha_mod'];
     const missingDatosFields = requiredDatosFields.filter(field => !datosCondiciones[field]);
-    
+
     if (missingDatosFields.length > 0) {
       return {
         statusCode: 400,
-        headers: headers,
-        body: JSON.stringify({ 
-          error: 'Campos requeridos faltantes en datos_condiciones', 
-          missing: missingDatosFields 
+        headers,
+        body: JSON.stringify({
+          error: 'Campos requeridos faltantes en datos_condiciones',
+          missing: missingDatosFields
         })
       };
     }
-    
-    // Convertir formato de fecha
+
     const fechaModConvertida = convertirFecha(datosCondiciones.fecha_mod);
-    
+
     const client = new Client(dbConfig);
     await client.connect();
-    
+
     try {
       await client.query('BEGIN');
-      
-      // Verificar si ya existe un registro con el mismo idFlujo
-      const checkQuery = 'SELECT id_datos_condiciones FROM datos_condiciones WHERE id_promociones_ttp = $1';
+
+      const checkQuery = `
+        SELECT id_datos_condiciones 
+        FROM datos_condiciones 
+        WHERE id_promociones_ttp = $1
+      `;
+
       const checkResult = await client.query(checkQuery, [body.idFlujo]);
-      
       const exists = checkResult.rows.length > 0;
-      
+
       if (exists) {
-        // UPDATE - Si existe, actualizar
-        console.log(`Actualizando condiciones existentes para idFlujo: ${body.idFlujo}`);
-        
+        // ================================================
+        // UPDATE
+        // ================================================
+        console.log("\n===== DEBUG UPDATE START =====");
+        console.log("perfil_promociones:", datosCondiciones.perfil_promociones);
+        console.log("descuento_empleado:", datosCondiciones.descuento_empleado);
+        console.log("adicionales:", body.adicionales);
+        console.log("===== DEBUG UPDATE END =====\n");
+
         let updateQuery = `
           UPDATE datos_condiciones 
           SET urgente = $1,
@@ -136,6 +149,7 @@ exports.handler = async (event) => {
               nombre_editor = $18,
               fecha_mod = $19,
               responsable_modificacion = $20,
+              descuento_empleado = $21,
               ultima_modificacion = CURRENT_TIMESTAMP
         `;
         
@@ -155,12 +169,15 @@ exports.handler = async (event) => {
           datosCondiciones.porcentaje_pago_adelantado,
           datosCondiciones.automatica,
           datosCondiciones.condiciones_promociones,
-          datosCondiciones.perfil_promociones,
+
+          JSON.stringify(datosCondiciones.perfil_promociones), 
+
           datosCondiciones.comentarios,
           datosCondiciones.sub,
           datosCondiciones.nombreEditor,
           fechaModConvertida,
-          datosCondiciones.nombreEditor
+          datosCondiciones.nombreEditor,
+          datosCondiciones.descuento_empleado
         ];
 
         if (body.adicionales) {
@@ -168,28 +185,38 @@ exports.handler = async (event) => {
           values.push(JSON.stringify(body.adicionales));
         }
 
-        // Finalmente el WHERE
         updateQuery += ` WHERE id_promociones_ttp = $${values.length + 1} RETURNING id_datos_condiciones`;
         values.push(body.idFlujo);
 
-        console.log('UPDATE values:', values);
+        console.log("\n===== FINAL UPDATE QUERY =====");
+        console.log(updateQuery);
+        console.log("===== FINAL UPDATE VALUES =====");
+        console.log(values);
+        console.log("================================\n");
+
         await client.query(updateQuery, values);
-        
+
       } else {
-        // INSERT - Si no existe, crear nuevo registro
-        console.log(`Creando nuevas condiciones para idFlujo: ${body.idFlujo}`);
-        
+        // ================================================
+        // INSERT
+        // ================================================
+        console.log("\n===== DEBUG INSERT START =====");
+        console.log("perfil_promociones:", datosCondiciones.perfil_promociones);
+        console.log("descuento_empleado:", datosCondiciones.descuento_empleado);
+        console.log("adicionales:", body.adicionales);
+        console.log("===== DEBUG INSERT END =====\n");
+
         let insertFields = `
           id_promociones_ttp, urgente, fin_promocion_y_producto, campania_r_l_bot,
           descuento_de_por_vida, bestfit, prorroteo, no_visible_en_front, determina_promocion,
           es_comisionable, cupon, meses_pago_adelantado, porcentaje_pago_adelantado, automatica,
           condiciones_promociones, perfil_promociones, comentarios, sub, 
-          nombre_editor, fecha_mod, responsable_modificacion, ultima_modificacion
+          nombre_editor, fecha_mod, responsable_modificacion, descuento_empleado, ultima_modificacion
         `;
 
         let placeholders = `
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-          $15, $16, $17, $18, $19, $20, $21, CURRENT_TIMESTAMP
+          $15, $16, $17, $18, $19, $20, $21, $22, CURRENT_TIMESTAMP
         `;
         
         const values = [
@@ -208,15 +235,17 @@ exports.handler = async (event) => {
           datosCondiciones.porcentaje_pago_adelantado,
           datosCondiciones.automatica,
           datosCondiciones.condiciones_promociones,
-          datosCondiciones.perfil_promociones,
+
+          JSON.stringify(datosCondiciones.perfil_promociones), // 🔥 FIX JSON
+
           datosCondiciones.comentarios,
           datosCondiciones.sub,
           datosCondiciones.nombreEditor,
           fechaModConvertida,
-          datosCondiciones.nombreEditor
+          datosCondiciones.nombreEditor,
+          datosCondiciones.descuento_empleado
         ];
 
-        // Solo agregamos adicional si viene
         if (body.adicionales) {
           insertFields += `, adicional`;
           placeholders += `, $${values.length + 1}`;
@@ -229,53 +258,50 @@ exports.handler = async (event) => {
           RETURNING id_datos_condiciones
         `;
 
-        console.log('INSERT values:', values);
-        console.log('Number of values:', values.length);
+        console.log("\n===== FINAL INSERT QUERY =====");
+        console.log(insertQuery);
+        console.log("===== FINAL INSERT VALUES =====");
+        console.log(values);
+        console.log("================================\n");
 
-        const result = await client.query(insertQuery, values);
-
-        console.log("resultado : ", result);
+        await client.query(insertQuery, values);
       }
-      
+
       await client.query('COMMIT');
-      
+
       return {
         statusCode: 200,
-        headers: headers,
+        headers,
         body: JSON.stringify({
           message: exists ? 'Condiciones actualizadas exitosamente' : 'Condiciones guardadas exitosamente',
           idFlujo: body.idFlujo,
           action: exists ? 'updated' : 'created'
         })
       };
-      
+
     } catch (dbError) {
       await client.query('ROLLBACK');
-      console.error('Database error in condiciones handler:', dbError);
-      
-      // Manejar error específico de NULL
-      if (dbError.message.includes('null value in column')) {
-        return {
-          statusCode: 400,
-          headers: headers,
-          body: JSON.stringify({
-            error: 'Error de validación en la base de datos',
-            details: dbError.message
-          })
-        };
-      }
-      
-      throw dbError;
+      console.error('\n❌ ERROR EN BASE DE DATOS:');
+      console.error(dbError);
+
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Error interno del servidor',
+          details: dbError.message
+        })
+      };
     } finally {
       await client.end();
     }
-    
+
   } catch (error) {
-    console.error('Error en condiciones handler:', error);
-    
+    console.error('\n❌ ERROR GENERAL:', error);
+
     return {
       statusCode: 500,
-      headers: headers,
+      headers,
       body: JSON.stringify({
         error: 'Error interno del servidor',
         details: error.message

@@ -7,6 +7,7 @@ const handlers = {
   'POST:/dispersion-megas': require('./handlers/dispersionMegasHandler'),
   'POST:/dispersion-combinada': require('./handlers/dispersionCombinadaHandler'),
   'POST:/promociones': require('./handlers/promocionesHandler'),
+  
   'POST:/condiciones': require('./handlers/condicionesHandler'),
   'POST:/datosplanes': require('./handlers/planesHandler'),
   'POST:/inconvivencias': require('./handlers/inconvivenciasHandler'),
@@ -30,7 +31,8 @@ const handlers = {
   'POST:/simuladorGrafo': require('./handlers/grafosSimuladorHandler'),
   'POST:/detalleSimuladorGrafo': require('./handlers/detalleGrafoSimuladorHandler'),
   'POST:/getCuentasNoCoinciden': require('./handlers/getCuentasNoCoincidenHnadler'),
-  'POST:/getPromocionesAplicadas': require('./handlers/getPromocionesAplicadasHandler')
+  'POST:/getPromocionesAplicadas': require('./handlers/getPromocionesAplicadasHandler'),
+  'POST:/cambioEstatusPromottp': require('./handlers/cambioEstatusPromottpHandler')
 };
 
 exports.handler = async (event) => {

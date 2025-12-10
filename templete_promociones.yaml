@@ -15,12 +15,12 @@ Resources:
       Handler: index.handler
       Role: !GetAtt LambdaExecutionRole.Arn
       Code:
-        S3Bucket: "lambdas-ttp"
-        S3Key: "promociones/js001.zip"
+        S3Bucket: "lambdasttp"
+        S3Key: "promociones/js002.zip"
       Timeout: 30
       Environment:
         Variables:
-          DB_HOST: 'database-1-instance-1.cmtmyua0wk2k.us-east-1.rds.amazonaws.com'
+          DB_HOST: 'database-1-instance-1.czoco8oa6f0w.us-east-1.rds.amazonaws.com'
           DB_PORT: '5432'
           DB_NAME: 'postgres'
           DB_USER: 'postgres'
@@ -1377,6 +1377,51 @@ Resources:
             method.response.header.Access-Control-Allow-Origin: true
             method.response.header.Access-Control-Allow-Methods: true
 
+# ==================== CAMBIO ESTATUS PROMO TTP ====================
+  EstatusPromoTtpResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ParentId: !GetAtt ApiGateway.RootResourceId
+      PathPart: 'cambioEstatusPromottp'
+
+  EstatusPromoTtpMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref EstatusPromoTtpResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostgresLambda.Arn}/invocations'
+
+  EstatusPromoTtpOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref EstatusPromoTtpResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+
   # Configuración CORS global
   GatewayResponse:
     Type: AWS::ApiGateway::GatewayResponse
@@ -1448,6 +1493,8 @@ Resources:
       - CuentasNoCoincidenOptionsMethod
       - PromocionesAplicadasMethod
       - PromocionesAplicadasOptionsMethod
+      - EstatusPromoTtpMethod
+      - EstatusPromoTtpOptionsMethod
     Properties:
       RestApiId: !Ref ApiGateway
       StageName: !Ref EnvironmentName
@@ -1572,6 +1619,11 @@ Outputs:
   PromocionesAplicadasApiUrl:
     Description: 'URL del endpoint que regesa datos calculados de promociones_ttp, simulador_planes_cuentas, datos_condiciones y datos_dispercion_adicional'
     Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/getPromocionesAplicadas'   
+
+  EstatusPromoTtpApiUrl:
+    Description: 'URL del endpoint que actualiza el estatus de la tabla de promociones_ttp'
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/cambioEstatusPromottp'   
+
 
   ApiGatewayId:
     Description: 'ID del API Gateway'
