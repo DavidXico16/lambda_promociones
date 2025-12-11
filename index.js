@@ -32,7 +32,8 @@ const handlers = {
   'POST:/detalleSimuladorGrafo': require('./handlers/detalleGrafoSimuladorHandler'),
   'POST:/getCuentasNoCoinciden': require('./handlers/getCuentasNoCoincidenHnadler'),
   'POST:/getPromocionesAplicadas': require('./handlers/getPromocionesAplicadasHandler'),
-  'POST:/cambioEstatusPromottp': require('./handlers/cambioEstatusPromottpHandler')
+  'POST:/cambioEstatusPromottp': require('./handlers/cambioEstatusPromottpHandler'),
+  'POST:/autorizaciones': require('./handlers/autorizacionesHandler')
 };
 
 exports.handler = async (event) => {
