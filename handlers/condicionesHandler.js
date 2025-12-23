@@ -12,14 +12,16 @@ const dbConfig = {
   }
 };
 
-// Función para convertir fecha de DD/MM/YYYY a YYYY-MM-DD
+// Función para convertir fecha ISO a formato PostgreSQL
 function convertirFecha(fecha) {
   if (!fecha) return null;
   
-  if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-    return fecha;
+  // Si ya es una fecha ISO, extraer solo la parte YYYY-MM-DD
+  if (fecha.includes('T')) {
+    return fecha.split('T')[0]; // Extraer solo la fecha (YYYY-MM-DD)
   }
   
+  // Si es DD/MM/YYYY, convertir a YYYY-MM-DD
   const partes = fecha.split('/');
   if (partes.length === 3) {
     return `${partes[2]}-${partes[1]}-${partes[0]}`;
@@ -100,7 +102,9 @@ exports.handler = async (event) => {
       };
     }
 
+    // Convertir fecha ISO a YYYY-MM-DD
     const fechaModConvertida = convertirFecha(datosCondiciones.fecha_mod);
+    console.log("Fecha convertida:", fechaModConvertida);
 
     const client = new Client(dbConfig);
     await client.connect();
@@ -121,12 +125,9 @@ exports.handler = async (event) => {
         // ================================================
         // UPDATE
         // ================================================
-        console.log("\n===== DEBUG UPDATE START =====");
-        console.log("perfil_promociones:", datosCondiciones.perfil_promociones);
-        console.log("descuento_empleado:", datosCondiciones.descuento_empleado);
-        console.log("adicionales:", body.adicionales);
-        console.log("===== DEBUG UPDATE END =====\n");
-
+        console.log("\n===== REALIZANDO UPDATE =====");
+        
+        // Construir la query base
         let updateQuery = `
           UPDATE datos_condiciones 
           SET urgente = $1,
@@ -143,17 +144,17 @@ exports.handler = async (event) => {
               porcentaje_pago_adelantado = $12,
               automatica = $13,
               condiciones_promociones = $14,
-              perfil_promociones = $15,
-              comentarios = $16,
-              sub = $17,
-              nombre_editor = $18,
-              fecha_mod = $19,
-              responsable_modificacion = $20,
-              descuento_empleado = $21,
-              ultima_modificacion = CURRENT_TIMESTAMP
+              comentarios = $15,
+              sub = $16,
+              nombre_editor = $17,
+              fecha_mod = $18,
+              responsable_modificacion = $19,
+              ultima_modificacion = CURRENT_TIMESTAMP,
+              descuento_empleado = $20,
+              perfil_promociones = $21
         `;
         
-        // Solo agregamos adicional si viene
+        // Valores base
         const values = [
           datosCondiciones.urgente,
           datosCondiciones.fin_promocion_y_producto,
@@ -169,30 +170,30 @@ exports.handler = async (event) => {
           datosCondiciones.porcentaje_pago_adelantado,
           datosCondiciones.automatica,
           datosCondiciones.condiciones_promociones,
-
-          JSON.stringify(datosCondiciones.perfil_promociones), 
-
           datosCondiciones.comentarios,
           datosCondiciones.sub,
           datosCondiciones.nombreEditor,
           fechaModConvertida,
           datosCondiciones.nombreEditor,
-          datosCondiciones.descuento_empleado
+          datosCondiciones.descuento_empleado,
+          JSON.stringify(datosCondiciones.perfil_promociones || [])
         ];
 
+        // Si hay adicionales, agregarlo como nuevo parámetro
+        let paramCounter = values.length + 1;
         if (body.adicionales) {
-          updateQuery += `, adicional = $21`;
+          updateQuery += `, adicional = $${paramCounter}`;
           values.push(JSON.stringify(body.adicionales));
+          paramCounter++;
         }
 
-        updateQuery += ` WHERE id_promociones_ttp = $${values.length + 1} RETURNING id_datos_condiciones`;
+        // Agregar WHERE
+        updateQuery += ` WHERE id_promociones_ttp = $${paramCounter} RETURNING id_datos_condiciones`;
         values.push(body.idFlujo);
 
-        console.log("\n===== FINAL UPDATE QUERY =====");
-        console.log(updateQuery);
-        console.log("===== FINAL UPDATE VALUES =====");
-        console.log(values);
-        console.log("================================\n");
+        console.log("UPDATE Query:", updateQuery);
+        console.log("UPDATE Valores:", values);
+        console.log("Total parámetros:", values.length);
 
         await client.query(updateQuery, values);
 
@@ -200,69 +201,81 @@ exports.handler = async (event) => {
         // ================================================
         // INSERT
         // ================================================
-        console.log("\n===== DEBUG INSERT START =====");
-        console.log("perfil_promociones:", datosCondiciones.perfil_promociones);
-        console.log("descuento_empleado:", datosCondiciones.descuento_empleado);
-        console.log("adicionales:", body.adicionales);
-        console.log("===== DEBUG INSERT END =====\n");
+        console.log("\n===== REALIZANDO INSERT =====");
 
-        let insertFields = `
-          id_promociones_ttp, urgente, fin_promocion_y_producto, campania_r_l_bot,
-          descuento_de_por_vida, bestfit, prorroteo, no_visible_en_front, determina_promocion,
-          es_comisionable, cupon, meses_pago_adelantado, porcentaje_pago_adelantado, automatica,
-          condiciones_promociones, perfil_promociones, comentarios, sub, 
-          nombre_editor, fecha_mod, responsable_modificacion, descuento_empleado, ultima_modificacion
-        `;
-
-        let placeholders = `
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-          $15, $16, $17, $18, $19, $20, $21, $22, CURRENT_TIMESTAMP
+        // Preparar valores
+        const values = [
+          body.idFlujo,                                 // $1
+          datosCondiciones.urgente,                     // $2
+          datosCondiciones.fin_promocion_y_producto,    // $3
+          datosCondiciones.campania_r_l_bot,            // $4
+          datosCondiciones.descuento_de_por_vida,       // $5
+          datosCondiciones.bestfit,                     // $6
+          datosCondiciones.prorroteo,                   // $7
+          datosCondiciones.no_visible_en_front,         // $8
+          datosCondiciones.determina_promocion,         // $9
+          datosCondiciones.es_comisionable,             // $10
+          datosCondiciones.cupon,                       // $11
+          datosCondiciones.meses_pago_adelantado,       // $12
+          datosCondiciones.porcentaje_pago_adelantado,  // $13
+          datosCondiciones.automatica,                  // $14
+          datosCondiciones.condiciones_promociones,     // $15
+          datosCondiciones.comentarios,                 // $16
+          datosCondiciones.sub,                         // $17
+          datosCondiciones.nombreEditor,                // $18
+          fechaModConvertida,                           // $19
+          datosCondiciones.nombreEditor,                // $20 (responsable_modificacion)
+          datosCondiciones.descuento_empleado,          // $21
+          JSON.stringify(datosCondiciones.perfil_promociones || [])  // $22
+        ];
+        
+        // Construir query dinámicamente
+        let insertQuery = `
+          INSERT INTO datos_condiciones (
+            id_promociones_ttp, 
+            urgente, 
+            fin_promocion_y_producto, 
+            campania_r_l_bot, 
+            descuento_de_por_vida, 
+            bestfit, 
+            prorroteo, 
+            no_visible_en_front, 
+            determina_promocion, 
+            es_comisionable, 
+            cupon, 
+            meses_pago_adelantado, 
+            porcentaje_pago_adelantado, 
+            automatica, 
+            condiciones_promociones, 
+            comentarios, 
+            sub, 
+            nombre_editor, 
+            fecha_mod, 
+            fecha_creacion, 
+            responsable_modificacion, 
+            ultima_modificacion, 
+            descuento_empleado, 
+            perfil_promociones
         `;
         
-        const values = [
-          body.idFlujo,
-          datosCondiciones.urgente,
-          datosCondiciones.fin_promocion_y_producto,
-          datosCondiciones.campania_r_l_bot,
-          datosCondiciones.descuento_de_por_vida,
-          datosCondiciones.bestfit,
-          datosCondiciones.prorroteo,
-          datosCondiciones.no_visible_en_front,
-          datosCondiciones.determina_promocion,
-          datosCondiciones.es_comisionable,
-          datosCondiciones.cupon,
-          datosCondiciones.meses_pago_adelantado,
-          datosCondiciones.porcentaje_pago_adelantado,
-          datosCondiciones.automatica,
-          datosCondiciones.condiciones_promociones,
-
-          JSON.stringify(datosCondiciones.perfil_promociones), // 🔥 FIX JSON
-
-          datosCondiciones.comentarios,
-          datosCondiciones.sub,
-          datosCondiciones.nombreEditor,
-          fechaModConvertida,
-          datosCondiciones.nombreEditor,
-          datosCondiciones.descuento_empleado
-        ];
-
+        let placeholders = `
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+            $11, $12, $13, $14, $15, $16, $17, $18, $19, 
+            CURRENT_TIMESTAMP, $20, CURRENT_TIMESTAMP, $21, $22
+        `;
+        
+        // Agregar adicionales si existen
         if (body.adicionales) {
-          insertFields += `, adicional`;
+          insertQuery += `, adicional`;
           placeholders += `, $${values.length + 1}`;
           values.push(JSON.stringify(body.adicionales));
         }
+        
+        insertQuery += `) VALUES (${placeholders}) RETURNING id_datos_condiciones`;
 
-        const insertQuery = `
-          INSERT INTO datos_condiciones (${insertFields})
-          VALUES (${placeholders})
-          RETURNING id_datos_condiciones
-        `;
-
-        console.log("\n===== FINAL INSERT QUERY =====");
-        console.log(insertQuery);
-        console.log("===== FINAL INSERT VALUES =====");
-        console.log(values);
-        console.log("================================\n");
+        console.log("INSERT Query:", insertQuery);
+        console.log("INSERT Valores:", values);
+        console.log("Total parámetros:", values.length);
 
         await client.query(insertQuery, values);
       }
@@ -282,14 +295,24 @@ exports.handler = async (event) => {
     } catch (dbError) {
       await client.query('ROLLBACK');
       console.error('\n❌ ERROR EN BASE DE DATOS:');
-      console.error(dbError);
+      console.error("Mensaje:", dbError.message);
+      console.error("Stack:", dbError.stack);
+      
+      // Log detallado del error
+      if (dbError.code) {
+        console.error("Código error PostgreSQL:", dbError.code);
+      }
+      if (dbError.position) {
+        console.error("Posición error:", dbError.position);
+      }
 
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({
           error: 'Error interno del servidor',
-          details: dbError.message
+          details: dbError.message,
+          code: dbError.code
         })
       };
     } finally {

@@ -134,7 +134,8 @@ exports.handler = async (event) => {
               const updatePromocionesQuery = `
                 UPDATE promociones_ttp 
                 SET responsable_modificacion = $1, 
-                    ultima_modificacion = $2
+                    ultima_modificacion = $2,
+                    nombre_promocion = $4
                 WHERE id_promociones_ttp = $3
                 RETURNING id_promociones_ttp
               `;
@@ -142,7 +143,8 @@ exports.handler = async (event) => {
               const promocionesValues = [
                 datosPromocion.nombreEditor,
                 fechaModConvertida,
-                body.idflujo
+                body.idflujo,
+                datosPromocion.nombre
               ];
               
               const response = await client.query(updatePromocionesQuery, promocionesValues);
