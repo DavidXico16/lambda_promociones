@@ -16,7 +16,7 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       Code:
         S3Bucket: "lambdasttp"
-        S3Key: "promociones/js006.zip"
+        S3Key: "promociones/js011.zip"
       Timeout: 30
       Environment:
         Variables:
@@ -1491,7 +1491,7 @@ Resources:
     Properties:
       RestApiId: !Ref ApiGateway
       ResourceId: !Ref DeletePromocionesResource
-      HttpMethod: POST
+      HttpMethod: DELETE
       AuthorizationType: NONE
       Integration:
         Type: AWS_PROXY
@@ -1513,6 +1513,50 @@ Resources:
               method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
               method.response.header.Access-Control-Allow-Origin: "'*'"
               method.response.header.Access-Control-Allow-Methods: "'DELETE,OPTIONS'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+# ==================== ESTATUS PROMOCIONES  ====================
+  EstatusPromocionesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ParentId: !GetAtt ApiGateway.RootResourceId
+      PathPart: 'estatusPromociones'
+
+  EstatusPromocionesMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref EstatusPromocionesResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostgresLambda.Arn}/invocations'
+
+  EstatusPromocionesOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref EstatusPromocionesResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
         RequestTemplates:
           application/json: '{"statusCode": 200}'
       MethodResponses:
@@ -1600,6 +1644,8 @@ Resources:
       - PromocionesDeleteMethod
       - DeletePromocionesMethod
       - DeletePromocionesOptionsMethod
+      - EstatusPromocionesMethod
+      - EstatusPromocionesOptionsMethod
     Properties:
       RestApiId: !Ref ApiGateway
       StageName: !Ref EnvironmentName
@@ -1737,6 +1783,9 @@ Outputs:
     Description: 'URL del endpoint qque elimina los nodos o todo el fujo de promociones'
     Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/deletePromociones'   
 
+  EstatusPromocionesApiUrl:
+    Description: 'URL del endpoint que trae la infromacion si esta aprobado la promocion'
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentName}/estatusPromociones'   
 
   ApiGatewayId:
     Description: 'ID del API Gateway'
